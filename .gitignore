@@ -1,0 +1,10 @@
+.env
+.venv/
+venv/
+__pycache__/
+*.pyc
+.vscode/
+flask_erro.txt
+flask_saida.txt
+
+*.bak

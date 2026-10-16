@@ -1,0 +1,120 @@
+
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <title>SALTY — Cardápio</title>
+  <meta name="description" content="Peça seus lanches favoritos na SALTY.">
+
+  <meta name="theme-color" content="#e63a1e">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+  <link
+    href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;800&family=DM+Sans:wght@400;500;700&display=swap"
+    rel="stylesheet"
+  >
+
+  <link rel="stylesheet" href="/css/variables.css">
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+
+<body>
+  <!-- Cabeçalho -->
+  <header class="topbar">
+    <a class="logo" href="/" aria-label="SALTY, início">
+      SALTY
+      <i aria-hidden="true"></i>
+    </a>
+
+    <button
+      class="cart-btn"
+      id="open-cart"
+      type="button"
+      aria-label="Abrir carrinho"
+    >
+      <svg
+        width="22"
+        height="22"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        aria-hidden="true"
+      >
+        <path d="M6 6h15l-1.5 9h-12z"></path>
+        <path d="M6 6 5 3H2"></path>
+        <circle cx="9" cy="20" r="1.5"></circle>
+        <circle cx="18" cy="20" r="1.5"></circle>
+      </svg>
+
+      <span class="badge" id="cart-count" hidden>0</span>
+    </button>
+  </header>
+
+  <!-- Aviso de demonstração -->
+  <p class="demo-note" id="demo-note" hidden>
+    Cardápio de demonstração: produtos, preços e imagens são fictícios.
+  </p>
+
+  <!-- Pesquisa de produtos -->
+  <section class="search" aria-label="Pesquisar produtos">
+    <label for="product-search">O que você está procurando?</label>
+
+    <input
+      type="search"
+      id="product-search"
+      placeholder="Buscar hambúrguer, bacon, batata..."
+      autocomplete="off"
+      aria-label="Pesquisar produtos por nome ou descrição"
+    >
+  </section>
+
+  <!-- Categorias -->
+  <nav class="cats" aria-label="Categorias">
+    <div class="cats-track" id="cats"></div>
+  </nav>
+
+  <!-- Cardápio -->
+  <main class="menu" id="menu" aria-live="polite">
+    <p class="state">Carregando cardápio…</p>
+  </main>
+
+  <!-- Detalhes e personalização do produto -->
+  <dialog
+    id="product-dialog"
+    class="sheet"
+    aria-labelledby="pd-title"
+  ></dialog>
+
+  <!-- Carrinho -->
+  <dialog
+    id="cart-dialog"
+    class="sheet"
+    aria-labelledby="cart-title"
+  ></dialog>
+
+  <!-- Mensagens ao usuário -->
+  <div
+    class="toast"
+    id="toast"
+    role="status"
+    aria-live="polite"
+  ></div>
+
+  <!-- Acesso discreto à área administrativa -->
+  <footer class="rodape">
+    <a href="/admin.html" class="link-admin">Área administrativa</a>
+  </footer>
+
+  <!-- JavaScript -->
+  <script src="/js/api.js"></script>
+  <script src="/js/cart.js"></script>
+  <script src="/js/app.js"></script>
+</body>
+</html>
