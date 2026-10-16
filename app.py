@@ -22,7 +22,7 @@ def create_app() -> Flask:
 
     app.config.from_object(Config)
 
-    # Configurações dos cookies da sessão.
+    # ConfiguraÃ§Ãµes dos cookies da sessÃ£o.
     app.config["SESSION_COOKIE_HTTPONLY"] = True
     app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
     app.config["SESSION_COOKIE_SECURE"] = not app.debug
@@ -34,17 +34,19 @@ def create_app() -> Flask:
 
     @app.get("/")
     def index():
-        # A página principal abre direto no cardápio.
+        # A pÃ¡gina principal abre direto no cardÃ¡pio.
         return send_from_directory(FRONTEND_DIR, "index.html")
 
     @app.errorhandler(404)
     def not_found(_):
         return jsonify({
-            "error": "Recurso não encontrado."
+            "error": "Recurso nÃ£o encontrado."
         }), 404
 
     return app
 
+
+app = create_app()
 
 if __name__ == "__main__":
     app = create_app()
