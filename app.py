@@ -10,19 +10,19 @@ from backend.routes.catalog import catalog_bp
 from backend.routes.orders import orders_bp
 
 
-FRONTEND_DIR = Path(__file__).parent / "frontend"
+FRONTEND_DIR = Path(__file__).parent / "public"
 
 
 def create_app() -> Flask:
     app = Flask(
         __name__,
-        static_folder=str(FRONTEND_DIR),
+        static_folder=None,
         static_url_path="",
     )
 
     app.config.from_object(Config)
 
-    # ConfiguraÃ§Ãµes dos cookies da sessÃ£o.
+    # ConfiguraÃƒÂ§ÃƒÂµes dos cookies da sessÃƒÂ£o.
     app.config["SESSION_COOKIE_HTTPONLY"] = True
     app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
     app.config["SESSION_COOKIE_SECURE"] = not app.debug
@@ -34,13 +34,16 @@ def create_app() -> Flask:
 
     @app.get("/")
     def index():
-        # A pÃ¡gina principal abre direto no cardÃ¡pio.
+        # A pÃƒÂ¡gina principal abre direto no cardÃƒÂ¡pio.
         return send_from_directory(FRONTEND_DIR, "index.html")
 
+    @app.get("/<path:filename>")
+    def public_files(filename):
+        return send_from_directory(FRONTEND_DIR, filename)
     @app.errorhandler(404)
     def not_found(_):
         return jsonify({
-            "error": "Recurso nÃ£o encontrado."
+            "error": "Recurso nÃƒÂ£o encontrado."
         }), 404
 
     return app

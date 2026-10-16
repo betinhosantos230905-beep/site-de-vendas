@@ -1,0 +1,1612 @@
+
+/* =========================================================
+   SALTY | LANCHES
+   Folha de estilos principal
+   Tema: verde sálvia, branco e tons naturais
+   ========================================================= */
+
+/* =========================
+   1. VARIÁVEIS DO PROJETO
+   ========================= */
+
+:root {
+  --red: #7D9B7A;
+  --red-dark: #536F52;
+  --orange: #DCE7D8;
+
+  --bg: #F7F6F0;
+  --card: #FFFFFF;
+  --ink: #29352B;
+  --muted: #687568;
+  --line: #E0E6DC;
+  --danger-bg: #F8E9E6;
+
+  --font-body: "DM Sans", sans-serif;
+  --font-display: "DM Sans", sans-serif;
+
+  --radius: 16px;
+  --radius-sm: 12px;
+  --tap: 44px;
+
+  --s1: 4px;
+  --s2: 8px;
+  --s3: 12px;
+  --s4: 16px;
+  --s5: 24px;
+  --s6: 32px;
+
+  --shadow:
+    0 4px 16px rgba(41, 53, 43, 0.06);
+
+  --shadow-hover:
+    0 8px 24px rgba(41, 53, 43, 0.10);
+
+  --checkout-width: 560px;
+}
+
+/* =========================
+   2. RESET E CONFIGURAÇÕES
+   ========================= */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  font: 400 16px/1.45 var(--font-body);
+  color: var(--ink);
+  background: var(--bg);
+  overflow-x: hidden;
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+  color: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+button:disabled {
+  cursor: not-allowed;
+}
+
+img {
+  max-width: 100%;
+}
+
+:focus-visible {
+  outline: 3px solid var(--red-dark);
+  outline-offset: 3px;
+}
+
+[hidden] {
+  display: none !important;
+}
+
+/* =========================
+   3. BARRA SUPERIOR
+   ========================= */
+
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  padding: var(--s2) var(--s4);
+
+  background: var(--red);
+  color: #FFFFFF;
+
+  box-shadow: 0 2px 10px rgba(41, 53, 43, 0.08);
+}
+
+.logo {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+
+  font: 800 1.6rem/1 var(--font-display);
+  letter-spacing: .02em;
+
+  color: #FFFFFF;
+  text-decoration: none;
+}
+
+.logo i {
+  display: inline-block;
+
+  width: 9px;
+  height: 9px;
+  margin-top: -10px;
+
+  background: #E8EDE4;
+  transform: rotate(45deg);
+}
+
+.cart-btn {
+  position: relative;
+
+  display: grid;
+  place-items: center;
+
+  min-width: var(--tap);
+  min-height: var(--tap);
+
+  border: 0;
+  border-radius: 50%;
+
+  background: rgba(255, 255, 255, .18);
+  color: #FFFFFF;
+
+  transition:
+    background .2s ease,
+    transform .2s ease;
+}
+
+.cart-btn:hover {
+  background: rgba(255, 255, 255, .28);
+}
+
+.cart-btn:active {
+  transform: scale(.96);
+}
+
+.badge {
+  position: absolute;
+  top: 2px;
+  right: 0;
+
+  min-width: 20px;
+  height: 20px;
+  padding: 0 5px;
+
+  border-radius: 10px;
+
+  background: #FFFFFF;
+  color: var(--ink);
+
+  font: 700 .75rem/20px var(--font-body);
+  text-align: center;
+}
+
+/* =========================
+   4. AVISO DE DEMONSTRAÇÃO
+   ========================= */
+
+.demo-note {
+  margin: 0;
+  padding: var(--s2) var(--s4);
+
+  background: #E8EDE4;
+  color: #405A40;
+
+  font-size: .8rem;
+  text-align: center;
+}
+
+/* =========================
+   5. CATEGORIAS
+   ========================= */
+
+.cats {
+  position: sticky;
+  top: 60px;
+  z-index: 10;
+
+  background: var(--bg);
+  border-bottom: 1px solid var(--line);
+}
+
+.cats-track {
+  display: flex;
+  gap: var(--s2);
+
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: var(--s3) var(--s4);
+
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.cats-track::-webkit-scrollbar {
+  display: none;
+}
+
+.chip {
+  flex: 0 0 auto;
+
+  min-height: 40px;
+  padding: 0 var(--s4);
+
+  border: 1px solid var(--line);
+  border-radius: 999px;
+
+  background: var(--card);
+  color: var(--ink);
+
+  font-weight: 500;
+  white-space: nowrap;
+
+  transition:
+    background .2s ease,
+    color .2s ease,
+    border-color .2s ease;
+}
+
+.chip:hover {
+  border-color: var(--red);
+}
+
+.chip[aria-pressed="true"] {
+  background: var(--red);
+  border-color: var(--red);
+  color: #FFFFFF;
+}
+
+/* =========================
+   6. CARDÁPIO
+   ========================= */
+
+.menu {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: var(--s4);
+}
+
+.menu h2 {
+  margin: var(--s5) 0 var(--s3);
+
+  color: var(--ink);
+  font: 800 1.25rem/1.2 var(--font-display);
+}
+
+.menu h2:first-child {
+  margin-top: var(--s2);
+}
+
+.state {
+  padding: var(--s6) 0;
+
+  color: var(--muted);
+  text-align: center;
+}
+
+/* =========================
+   7. GRADE DE PRODUTOS
+   ========================= */
+
+.grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--s3);
+}
+
+.card {
+  display: flex;
+  gap: var(--s3);
+
+  width: 100%;
+  padding: var(--s3);
+
+  text-align: left;
+
+  background: var(--card);
+  border: 1px solid #E8EDE4;
+  border-radius: var(--radius);
+
+  box-shadow: var(--shadow);
+
+  transition:
+    box-shadow .2s ease,
+    transform .2s ease,
+    border-color .2s ease;
+}
+
+.card:hover:not([disabled]) {
+  border-color: #C9D8C5;
+  box-shadow: var(--shadow-hover);
+}
+
+.card:active:not([disabled]) {
+  transform: scale(.99);
+}
+
+.card[disabled] {
+  opacity: .6;
+  cursor: not-allowed;
+}
+
+.thumb {
+  display: grid;
+  place-items: center;
+
+  flex: 0 0 96px;
+  height: 96px;
+
+  border-radius: var(--radius-sm);
+
+  font-size: 2.6rem;
+}
+
+.card-body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 2px;
+
+  min-width: 0;
+}
+
+.card-name {
+  color: var(--ink);
+  font: 700 1rem/1.25 var(--font-body);
+}
+
+.card-desc {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+
+  overflow: hidden;
+
+  color: var(--muted);
+  font-size: .875rem;
+}
+
+.card-foot {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--s2);
+
+  margin-top: auto;
+  padding-top: var(--s2);
+}
+
+.price {
+  color: var(--red-dark);
+  font-weight: 700;
+}
+
+.tag {
+  padding: 2px 8px;
+
+  border-radius: 999px;
+
+  background: #E8EDE4;
+  color: #405A40;
+
+  font-size: .72rem;
+  font-weight: 700;
+}
+
+.tag.off {
+  background: #EEEEEA;
+  color: #686B65;
+}
+
+/* =========================
+   8. JANELAS E MODAIS
+   ========================= */
+
+.sheet {
+  width: 100%;
+  max-width: 560px;
+  max-height: 92dvh;
+
+  margin: auto 0 0;
+  padding: 0;
+
+  overflow: hidden;
+
+  border: 0;
+  border-radius: 20px 20px 0 0;
+
+  background: var(--card);
+  color: var(--ink);
+}
+
+.sheet[open] {
+  display: flex;
+  flex-direction: column;
+
+  animation: up .22s ease-out;
+}
+
+.sheet::backdrop {
+  background: rgba(34, 43, 34, .55);
+  backdrop-filter: blur(3px);
+}
+
+@keyframes up {
+  from {
+    transform: translateY(24px);
+    opacity: .6;
+  }
+
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+/* Cabeçalho das janelas */
+
+.sheet-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--s3);
+
+  padding: var(--s4) var(--s4) var(--s2);
+}
+
+.sheet-head h3 {
+  margin: 0;
+
+  color: var(--ink);
+  font: 800 1.3rem/1.2 var(--font-display);
+}
+
+.sheet-head p {
+  margin: var(--s1) 0 0;
+
+  color: var(--muted);
+  font-size: .9rem;
+}
+
+.close {
+  display: grid;
+  place-items: center;
+
+  flex: 0 0 auto;
+
+  min-width: var(--tap);
+  min-height: var(--tap);
+
+  border: 0;
+  border-radius: 50%;
+
+  background: #E8EDE4;
+  color: var(--ink);
+
+  font-size: 1.3rem;
+  line-height: 1;
+
+  transition: background .2s ease;
+}
+
+.close:hover {
+  background: #DCE7D8;
+}
+
+/* Conteúdo rolável */
+
+.sheet-body {
+  flex: 1;
+
+  overflow-y: auto;
+  overscroll-behavior: contain;
+
+  padding: 0 var(--s4) var(--s4);
+}
+
+/* Rodapé das janelas */
+
+.sheet-foot {
+  display: flex;
+  align-items: center;
+  gap: var(--s3);
+
+  padding:
+    var(--s3)
+    var(--s4)
+    calc(var(--s3) + env(safe-area-inset-bottom, 0px));
+
+  border-top: 1px solid var(--line);
+
+  background: var(--card);
+}
+
+/* =========================
+   9. GRUPOS E OPÇÕES
+   ========================= */
+
+fieldset.group {
+  margin: var(--s3) 0 0;
+  padding: var(--s2) var(--s3) var(--s3);
+
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+}
+
+fieldset.group.invalid {
+  border-color: #B85C50;
+  background: var(--danger-bg);
+}
+
+fieldset.group legend {
+  padding: 0 var(--s1);
+  font-weight: 700;
+}
+
+.rule {
+  margin: 0 0 var(--s1);
+
+  color: var(--muted);
+  font-size: .8rem;
+}
+
+.opt {
+  display: flex;
+  align-items: center;
+  gap: var(--s3);
+
+  min-height: var(--tap);
+
+  cursor: pointer;
+}
+
+.opt input {
+  flex: 0 0 auto;
+
+  width: 20px;
+  height: 20px;
+
+  accent-color: var(--red);
+}
+
+.opt span:last-child {
+  margin-left: auto;
+
+  color: var(--muted);
+  font-size: .9rem;
+}
+
+.opt.is-off {
+  opacity: .45;
+  cursor: not-allowed;
+}
+
+/* =========================
+   10. CAMPOS GERAIS
+   ========================= */
+
+label.lbl {
+  display: block;
+  margin-top: var(--s4);
+
+  color: var(--ink);
+  font-size: .9rem;
+  font-weight: 700;
+}
+
+input,
+select,
+textarea {
+  max-width: 100%;
+}
+
+input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+select,
+textarea {
+  border: 1px solid #DCE4D8;
+  border-radius: 12px;
+
+  background: #FFFFFF;
+  color: var(--ink);
+
+  transition:
+    border-color .2s ease,
+    box-shadow .2s ease;
+}
+
+input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):focus,
+select:focus,
+textarea:focus {
+  border-color: var(--red);
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(125, 155, 122, .16);
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: #879084;
+  opacity: 1;
+}
+
+textarea {
+  display: block;
+
+  width: 100%;
+  min-height: 64px;
+  margin-top: var(--s2);
+  padding: var(--s3);
+
+  resize: vertical;
+}
+
+/* =========================
+   11. CONTADOR DE QUANTIDADE
+   ========================= */
+
+.stepper {
+  display: inline-flex;
+  align-items: center;
+
+  border: 1px solid #DCE4D8;
+  border-radius: 999px;
+
+  background: #FFFFFF;
+}
+
+.stepper button {
+  width: var(--tap);
+  height: var(--tap);
+
+  border: 0;
+  border-radius: 50%;
+
+  background: transparent;
+  color: var(--ink);
+
+  font-size: 1.3rem;
+
+  transition: background .2s ease;
+}
+
+.stepper button:hover {
+  background: #E8EDE4;
+}
+
+.stepper output {
+  min-width: 28px;
+
+  text-align: center;
+  font-weight: 700;
+}
+
+/* =========================
+   12. BOTÕES
+   ========================= */
+
+.btn {
+  flex: 1;
+
+  min-height: 48px;
+  padding: 0 var(--s4);
+
+  border: 0;
+  border-radius: 12px;
+
+  background: var(--red);
+  color: #FFFFFF;
+
+  font-weight: 700;
+  text-align: center;
+
+  transition:
+    background .2s ease,
+    transform .15s ease,
+    box-shadow .2s ease;
+}
+
+.btn:hover:not([disabled]) {
+  background: var(--red-dark);
+  box-shadow: 0 4px 12px rgba(83, 111, 82, .18);
+}
+
+.btn:active:not([disabled]) {
+  transform: scale(.98);
+}
+
+.btn[disabled] {
+  background: #D5D9D1;
+  color: #666B62;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+.btn.ghost {
+  background: #E8EDE4;
+  color: var(--ink);
+}
+
+.btn.ghost:hover:not([disabled]) {
+  background: #DCE7D8;
+}
+
+.link {
+  min-height: 36px;
+  padding: var(--s2) 0;
+
+  border: 0;
+  background: none;
+
+  color: var(--red-dark);
+  text-decoration: underline;
+}
+
+/* =========================
+   13. ITENS DO CARRINHO
+   ========================= */
+
+.line {
+  display: flex;
+  gap: var(--s3);
+
+  padding: var(--s3) 0;
+
+  border-bottom: 1px solid var(--line);
+}
+
+.line-main {
+  flex: 1;
+  min-width: 0;
+}
+
+.line-main strong {
+  display: block;
+  color: var(--ink);
+}
+
+.line-main small {
+  display: block;
+  color: var(--muted);
+}
+
+.line-side {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: var(--s1);
+}
+
+/* =========================
+   14. TOTAL DO PEDIDO
+   ========================= */
+
+.totals {
+  display: grid;
+  gap: var(--s1);
+
+  margin-top: var(--s4);
+}
+
+.totals div {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--s3);
+}
+
+.totals .grand {
+  padding-top: var(--s2);
+  margin-top: var(--s2);
+
+  border-top: 1px solid var(--line);
+
+  color: var(--ink);
+  font-size: 1.15rem;
+  font-weight: 800;
+}
+
+.hint {
+  margin: var(--s2) 0 0;
+
+  color: var(--muted);
+  font-size: .85rem;
+}
+
+/* =========================
+   15. NOTIFICAÇÕES
+   ========================= */
+
+.toast {
+  position: fixed;
+  left: 50%;
+  bottom: 24px;
+  z-index: 50;
+
+  max-width: 90vw;
+  padding: var(--s3) var(--s4);
+
+  border-radius: 999px;
+
+  background: var(--ink);
+  color: #FFFFFF;
+
+  opacity: 0;
+  pointer-events: none;
+
+  transform: translate(-50%, 20px);
+
+  box-shadow: 0 6px 20px rgba(0, 0, 0, .15);
+
+  transition:
+    opacity .2s ease,
+    transform .2s ease;
+}
+
+.toast.show {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+
+/* =========================
+   16. CAMPO DE BUSCA
+   ========================= */
+
+.search {
+  padding: 14px 16px 10px;
+  background: var(--bg);
+}
+
+.search label {
+  display: block;
+  margin: 0 0 9px 2px;
+
+  color: var(--ink);
+  font-family: var(--font-body), sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.search input {
+  display: block;
+
+  width: 100%;
+  min-width: 0;
+  height: 48px;
+  padding: 0 16px;
+
+  border: 1px solid #DCE4D8;
+  border-radius: 14px;
+
+  outline: none;
+
+  background: #FFFFFF;
+  color: var(--ink);
+
+  font-family: var(--font-body), sans-serif;
+  font-size: 14px;
+
+  box-shadow: 0 3px 12px rgba(41, 53, 43, .05);
+
+  transition:
+    border-color .2s ease,
+    box-shadow .2s ease;
+}
+
+.search input::placeholder {
+  color: #788276;
+}
+
+.search input:focus {
+  border-color: var(--red);
+  box-shadow: 0 0 0 3px rgba(125, 155, 122, .18);
+}
+
+.search input::-webkit-search-cancel-button {
+  cursor: pointer;
+}
+
+/* =========================================================
+   17. CHECKOUT — FINALIZAÇÃO DO PEDIDO
+   ========================================================= */
+
+/*
+   Estas regras melhoram o checkout sem alterar o JavaScript.
+   Os seletores são limitados ao diálogo de checkout para
+   evitar mudanças involuntárias em outras janelas.
+*/
+
+/* Caixa principal do checkout */
+
+#checkout-dialog {
+  width: calc(100% - 24px);
+  max-width: var(--checkout-width);
+  max-height: min(92dvh, 900px);
+
+  margin: auto;
+
+  border: 1px solid rgba(224, 230, 220, .9);
+  border-radius: 22px;
+
+  background: var(--card);
+  color: var(--ink);
+
+  box-shadow: 0 20px 60px rgba(31, 45, 32, .20);
+}
+
+#checkout-dialog[open] {
+  display: flex;
+  flex-direction: column;
+
+  animation: checkout-appear .22s ease-out;
+}
+
+#checkout-dialog::backdrop {
+  background: rgba(29, 40, 29, .60);
+  backdrop-filter: blur(4px);
+}
+
+@keyframes checkout-appear {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(.99);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Cabeçalho do checkout */
+
+#checkout-dialog .sheet-head {
+  flex-shrink: 0;
+
+  padding: 22px 22px 16px;
+
+  border-bottom: 1px solid var(--line);
+  background: #FFFFFF;
+}
+
+#checkout-dialog .sheet-head h3 {
+  font-size: 1.35rem;
+  letter-spacing: -.025em;
+}
+
+#checkout-dialog .sheet-head p {
+  max-width: 360px;
+  margin-top: 6px;
+
+  font-size: .9rem;
+  line-height: 1.5;
+}
+
+/* Área rolável do formulário */
+
+#checkout-dialog .sheet-body {
+  padding: 8px 22px 24px;
+
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+/* Rótulos dos campos */
+
+#checkout-dialog label.lbl {
+  margin-top: 18px;
+  margin-bottom: 7px;
+
+  color: #354637;
+  font-size: .88rem;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+/* Campos de texto, telefone, CEP e número */
+
+#checkout-dialog input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+#checkout-dialog select,
+#checkout-dialog textarea {
+  display: block;
+
+  width: 100%;
+  min-width: 0;
+  min-height: 48px;
+  margin-top: 7px;
+  padding: 12px 14px;
+
+  border: 1px solid #DCE4D8;
+  border-radius: 12px;
+
+  background: #FFFFFF;
+  color: var(--ink);
+
+  font-family: var(--font-body), sans-serif;
+  font-size: 16px;
+  line-height: 1.4;
+
+  box-shadow: 0 1px 2px rgba(41, 53, 43, .025);
+
+  transition:
+    border-color .2s ease,
+    background .2s ease,
+    box-shadow .2s ease;
+}
+
+#checkout-dialog input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):hover,
+#checkout-dialog select:hover,
+#checkout-dialog textarea:hover {
+  border-color: #B8CBB4;
+}
+
+#checkout-dialog input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):focus,
+#checkout-dialog select:focus,
+#checkout-dialog textarea:focus {
+  border-color: var(--red-dark);
+  outline: none;
+  background: #FFFFFF;
+  box-shadow: 0 0 0 3px rgba(125, 155, 122, .16);
+}
+
+#checkout-dialog input::placeholder,
+#checkout-dialog textarea::placeholder {
+  color: #899286;
+  opacity: 1;
+}
+
+/* Área de observações */
+
+#checkout-dialog textarea {
+  min-height: 96px;
+  resize: vertical;
+  line-height: 1.5;
+}
+
+/* Campos de seleção */
+
+#checkout-dialog select {
+  padding-right: 36px;
+  cursor: pointer;
+}
+
+/* Endereço */
+
+#checkout-dialog .checkout-address {
+  margin-top: 18px;
+  padding: 16px;
+
+  border: 1px solid #E0E8DC;
+  border-radius: 16px;
+
+  background: #F8FAF6;
+}
+
+#checkout-dialog .checkout-address > label:first-child,
+#checkout-dialog .checkout-address > .lbl:first-child {
+  margin-top: 0;
+}
+
+#checkout-dialog .checkout-address label.lbl {
+  margin-top: 14px;
+}
+
+/* Separação visual entre seções do formulário */
+
+#checkout-dialog .sheet-body > h4,
+#checkout-dialog .sheet-body > .section-title {
+  margin: 24px 0 8px;
+
+  color: var(--ink);
+  font-size: 1rem;
+  font-weight: 800;
+}
+
+/* Grupos de opções dentro do checkout */
+
+#checkout-dialog fieldset.group {
+  margin-top: 18px;
+  padding: 12px 14px 14px;
+
+  border: 1px solid var(--line);
+  border-radius: 14px;
+
+  background: #FFFFFF;
+}
+
+#checkout-dialog fieldset.group legend {
+  padding: 0 7px;
+
+  color: #354637;
+  font-size: .9rem;
+  font-weight: 800;
+}
+
+#checkout-dialog fieldset.group.invalid {
+  border-color: #B85C50;
+  background: var(--danger-bg);
+}
+
+/* Opções de entrega, retirada e pagamento */
+
+#checkout-dialog .opt {
+  gap: 11px;
+  padding: 4px 0;
+
+  font-size: .93rem;
+  line-height: 1.45;
+}
+
+#checkout-dialog .opt input[type="radio"],
+#checkout-dialog .opt input[type="checkbox"] {
+  width: 19px;
+  height: 19px;
+  margin: 0;
+
+  accent-color: var(--red-dark);
+  cursor: pointer;
+}
+
+#checkout-dialog .opt span:last-child {
+  font-size: .9rem;
+}
+
+/* Informações auxiliares */
+
+#checkout-dialog .rule,
+#checkout-dialog .hint {
+  font-size: .82rem;
+  line-height: 1.5;
+}
+
+/* Campos relacionados ao troco */
+
+#checkout-dialog #checkout-troco {
+  margin-top: 8px;
+}
+
+/* Botões inferiores do checkout */
+
+#checkout-dialog .sheet-foot {
+  flex-shrink: 0;
+
+  gap: 10px;
+  padding: 14px 22px calc(14px + env(safe-area-inset-bottom, 0px));
+
+  border-top: 1px solid var(--line);
+
+  background: #FFFFFF;
+  box-shadow: 0 -4px 14px rgba(41, 53, 43, .035);
+}
+
+#checkout-dialog .sheet-foot .btn {
+  min-height: 50px;
+  border-radius: 13px;
+  font-size: .95rem;
+}
+
+#checkout-dialog .sheet-foot .btn:not(.ghost) {
+  box-shadow: 0 4px 10px rgba(83, 111, 82, .13);
+}
+
+#checkout-dialog .sheet-foot .btn:not(.ghost):hover:not([disabled]) {
+  background: var(--red-dark);
+}
+
+/* Botão secundário */
+
+#checkout-dialog .sheet-foot .btn.ghost {
+  border: 1px solid #DCE4D8;
+  background: #F5F7F2;
+}
+
+#checkout-dialog .sheet-foot .btn.ghost:hover:not([disabled]) {
+  background: #E8EDE4;
+}
+
+/* Estado de erro dos campos */
+
+#checkout-dialog input:invalid:not(:placeholder-shown),
+#checkout-dialog select:invalid,
+#checkout-dialog textarea:invalid {
+  border-color: #D8A39C;
+}
+
+/* Evita que os campos estourem a largura do checkout */
+
+#checkout-dialog *,
+#checkout-dialog *::before,
+#checkout-dialog *::after {
+  min-width: 0;
+}
+
+#checkout-dialog input[type="checkbox"],
+#checkout-dialog input[type="radio"] {
+  flex: 0 0 auto;
+  min-width: auto;
+}
+
+/* =========================
+   18. RESPONSIVIDADE
+   ========================= */
+
+/* Celulares pequenos */
+
+@media (max-width: 380px) {
+  .topbar {
+    padding-right: 12px;
+    padding-left: 12px;
+  }
+
+  .logo {
+    font-size: 1.4rem;
+  }
+
+  .menu {
+    padding: 12px;
+  }
+
+  .card {
+    gap: 10px;
+    padding: 10px;
+  }
+
+  .thumb {
+    flex-basis: 80px;
+    height: 80px;
+    font-size: 2.2rem;
+  }
+
+  .cats-track {
+    padding-right: 12px;
+    padding-left: 12px;
+  }
+
+  #checkout-dialog {
+    width: calc(100% - 12px);
+    max-height: 94dvh;
+    border-radius: 18px;
+  }
+
+  #checkout-dialog .sheet-head {
+    padding: 18px 16px 14px;
+  }
+
+  #checkout-dialog .sheet-body {
+    padding: 6px 16px 20px;
+  }
+
+  #checkout-dialog .sheet-foot {
+    padding-right: 16px;
+    padding-left: 16px;
+  }
+
+  #checkout-dialog .sheet-foot .btn {
+    padding-right: 10px;
+    padding-left: 10px;
+    font-size: .88rem;
+  }
+}
+
+/* Tablets e telas intermediárias */
+
+@media (min-width: 720px) {
+  .topbar {
+    padding: var(--s3) var(--s6);
+  }
+
+  .cats {
+    top: 68px;
+  }
+
+  .grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .sheet {
+    margin: auto;
+
+    max-height: 88vh;
+
+    border-radius: 20px;
+  }
+
+  .sheet[open] {
+    animation: none;
+  }
+
+  #checkout-dialog {
+    width: calc(100% - 32px);
+    max-height: 88vh;
+    border-radius: 22px;
+  }
+
+  #checkout-dialog .sheet-body {
+    padding-right: 26px;
+    padding-left: 26px;
+  }
+}
+
+/* Computadores e telas maiores */
+
+@media (min-width: 1020px) {
+  .grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .card {
+    flex-direction: column;
+  }
+
+  .thumb {
+    flex-basis: 150px;
+
+    width: 100%;
+    height: 150px;
+
+    font-size: 4rem;
+  }
+
+  .card-desc {
+    -webkit-line-clamp: 3;
+    line-clamp: 3;
+  }
+
+  #checkout-dialog {
+    max-width: 600px;
+  }
+}
+
+/* =========================
+   19. ACESSIBILIDADE
+   ========================= */
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+
+.rodape {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 24px 16px;
+  margin-top: 24px;
+}
+
+.link-admin {
+  color: #8a817c;
+  font-family: "DM Sans", sans-serif;
+  font-size: 12px;
+  font-weight: 400;
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+.link-admin:hover {
+  color: var(--cor);
+  text-decoration: underline;
+}
+
+.link-admin:focus-visible {
+  outline: 2px solid var(--cor);
+  outline-offset: 4px;
+  border-radius: 2px;
+}
+
+
+
+/* ---------- Cupons na área do cliente ---------- */
+
+.coupons-section {
+  padding: 16px;
+}
+
+.coupons-section[hidden] {
+  display: none;
+}
+
+.coupons-heading h2 {
+  margin: 0 0 4px;
+}
+
+.coupons-heading p,
+.coupon-detail {
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.coupons-list {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.coupon-card,
+.coupon-box {
+  padding: 14px;
+  border: 1px dashed var(--red);
+  border-radius: var(--raio);
+  background: var(--card);
+}
+
+.coupon-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.coupon-code {
+  display: inline-block;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+}
+
+.coupon-discount {
+  margin: 6px 0;
+  font-weight: 700;
+}
+
+.coupon-detail {
+  margin: 4px 0;
+}
+
+.coupon-select {
+  flex-shrink: 0;
+}
+
+.coupon-box {
+  display: grid;
+  gap: 10px;
+  margin: 18px 0;
+}
+
+.coupon-box h4,
+.coupon-box p {
+  margin: 0;
+}
+
+.coupon-box input {
+  width: 100%;
+  min-width: 0;
+}
+
+.coupon-message {
+  font-size: 0.9rem;
+  overflow-wrap: anywhere;
+}
+
+.coupon-total {
+  color: var(--red-dark);
+  font-weight: 700;
+}
+
+@media (min-width: 560px) {
+  .coupons-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+
+
+/* Faixa compacta de cupons */
+
+.coupons-section {
+  margin: 10px 16px;
+  padding: 0;
+}
+
+.coupons-section[hidden],
+.coupons-list[hidden] {
+  display: none !important;
+}
+
+.coupons-toggle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #ffd7c2;
+  border-radius: 12px;
+  background: #fff0e6;
+  color: #e63a1e;
+  text-align: left;
+  cursor: pointer;
+}
+
+.coupons-toggle-icon {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  flex-shrink: 0;
+  border-radius: 9px;
+  background: #fff;
+  font-size: 22px;
+  font-weight: 800;
+}
+
+.coupons-toggle-text {
+  display: grid;
+  flex: 1;
+  gap: 3px;
+}
+
+.coupons-toggle-text strong {
+  font-size: 14px;
+}
+
+.coupons-toggle-text small {
+  color: #79584b;
+  font-size: 12px;
+}
+
+.coupons-toggle-arrow {
+  font-size: 22px;
+  transition: transform 0.2s ease;
+}
+
+.coupons-toggle[aria-expanded="true"] .coupons-toggle-arrow {
+  transform: rotate(180deg);
+}
+
+.coupons-list:not([hidden]) {
+  display: grid;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.coupon-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px;
+  border: 1px dashed #e63a1e;
+  border-radius: 12px;
+  background: #fff;
+}
+
+.coupon-card-content {
+  min-width: 0;
+}
+
+.coupon-code {
+  display: inline-block;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  overflow-wrap: anywhere;
+}
+
+.coupon-discount {
+  margin: 5px 0;
+  font-weight: 700;
+}
+
+.coupon-detail {
+  margin: 4px 0;
+  color: #79584b;
+  font-size: 12px;
+}
+
+.coupon-select {
+  flex-shrink: 0;
+}
+
+@media (max-width: 380px) {
+  .coupon-card {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
