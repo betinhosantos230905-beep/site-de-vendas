@@ -384,6 +384,109 @@ def listar_categorias_admin():
 
 
 # ==========================================
+# CADASTRAR CATEGORIA
+# ==========================================
+
+@admin_bp.post("/categorias")
+@exigir_login_admin
+def cadastrar_categoria_admin():
+    dados = request.get_json(silent=True) or {}
+
+    nome = str(dados.get("name") or "").strip()
+    descricao = str(dados.get("description") or "").strip()
+    imagem_url = str(dados.get("image_url") or "").strip()
+
+    try:
+        ordem = int(dados.get("order", 0))
+
+        if isinstance(dados.get("order", 0), bool):
+            raise ValueError
+
+    except (TypeError, ValueError, OverflowError):
+        return jsonify({
+            "error": "Informe uma ordem valida."
+        }), 400
+
+    ativo = dados.get("active", True)
+
+    if not isinstance(ativo, bool):
+        return jsonify({
+            "error": "O campo active deve ser verdadeiro ou falso."
+        }), 400
+
+    if not nome or len(nome) > 60:
+        return jsonify({
+            "error": "O nome deve ter entre 1 e 60 caracteres."
+        }), 400
+
+    if len(descricao) > 200:
+        return jsonify({
+            "error": "A descricao pode ter ate 200 caracteres."
+        }), 400
+
+    if len(imagem_url) > 255:
+        return jsonify({
+            "error": "O endereco da imagem pode ter ate 255 caracteres."
+        }), 400
+
+    if ordem < 0 or ordem > 65535:
+        return jsonify({
+            "error": "A ordem deve estar entre 0 e 65535."
+        }), 400
+
+    conexao = None
+    cursor = None
+
+    try:
+        conexao = get_connection()
+        cursor = conexao.cursor()
+
+        cursor.execute("""
+            INSERT INTO categorias (
+                nome,
+                descricao,
+                imagem_url,
+                ordem,
+                ativo
+            )
+            VALUES (%s, %s, %s, %s, %s)
+        """, (
+            nome,
+            descricao or None,
+            imagem_url or None,
+            ordem,
+            ativo
+        ))
+
+        categoria_id = cursor.lastrowid
+        conexao.commit()
+
+        return jsonify({
+            "message": "Categoria cadastrada com sucesso.",
+            "id": categoria_id
+        }), 201
+
+    except Exception as erro:
+        if conexao:
+            conexao.rollback()
+
+        if getattr(erro, "errno", None) == 1062:
+            return jsonify({
+                "error": "Ja existe uma categoria com esse nome."
+            }), 409
+
+        return jsonify({
+            "error": "Nao foi possivel cadastrar a categoria."
+        }), 500
+
+    finally:
+        if cursor:
+            cursor.close()
+
+        if conexao:
+            conexao.close()
+
+# ==========================================
 # VALIDAÇÃO DOS PRODUTOS
 # ==========================================
 
