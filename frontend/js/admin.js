@@ -460,6 +460,29 @@ async function carregarCategorias() {
     } catch (erro) {
         categorias = [];
         
+
+
+        preencherSelectCategorias();
+
+        if (lista) {
+            lista.replaceChildren();
+
+            const linhaErro = elemento("tr");
+            const celulaErro = elemento("td", "", erro.message);
+            celulaErro.colSpan = 4;
+            linhaErro.append(celulaErro);
+            lista.append(linhaErro);
+        }
+
+        mostrarMensagem(
+            "Não foi possível carregar as categorias: " + erro.message,
+            true
+        );
+
+        return false;
+    }
+}
+
 /* =========================
    CADASTRAR CATEGORIAS
 ========================= */
@@ -580,27 +603,6 @@ $("#form-categoria")?.addEventListener(
     "submit",
     salvarCategoria
 );
-
-        preencherSelectCategorias();
-
-        if (lista) {
-            lista.replaceChildren();
-
-            const linhaErro = elemento("tr");
-            const celulaErro = elemento("td", "", erro.message);
-            celulaErro.colSpan = 4;
-            linhaErro.append(celulaErro);
-            lista.append(linhaErro);
-        }
-
-        mostrarMensagem(
-            "Não foi possível carregar as categorias: " + erro.message,
-            true
-        );
-
-        return false;
-    }
-}
 
 function normalizarCategoria(categoria) {
     const valorAtivo =

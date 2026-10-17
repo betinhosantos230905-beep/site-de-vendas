@@ -459,6 +459,9 @@ async function carregarCategorias() {
         return true;
     } catch (erro) {
         categorias = [];
+        
+
+
         preencherSelectCategorias();
 
         if (lista) {
@@ -479,6 +482,127 @@ async function carregarCategorias() {
         return false;
     }
 }
+
+/* =========================
+   CADASTRAR CATEGORIAS
+========================= */
+
+function abrirFormularioCategoria() {
+    const formulario = $("#form-categoria");
+    const card = $("#formulario-categoria-card");
+
+    if (!formulario || !card) return;
+
+    formulario.reset();
+
+    $("#categoria-ordem").value = "0";
+    $("#categoria-ativa").checked = true;
+    $("#mensagem-categoria").textContent = "";
+
+    card.hidden = false;
+
+    card.scrollIntoView({
+        behavior: "smooth",
+        block: "start"
+    });
+
+    $("#categoria-nome").focus();
+}
+
+function fecharFormularioCategoria() {
+    const formulario = $("#form-categoria");
+    const card = $("#formulario-categoria-card");
+
+    if (formulario) formulario.reset();
+    if (card) card.hidden = true;
+
+    const mensagem = $("#mensagem-categoria");
+
+    if (mensagem) {
+        mensagem.textContent = "";
+        mensagem.classList.remove("erro");
+    }
+}
+
+async function salvarCategoria(evento) {
+    evento.preventDefault();
+
+    const nome = $("#categoria-nome").value.trim();
+    const descricao = $("#categoria-descricao").value.trim();
+    const imagemUrl = $("#categoria-imagem").value.trim();
+    const ordemTexto = $("#categoria-ordem").value.trim();
+    const mensagem = $("#mensagem-categoria");
+    const botao = $("#btn-salvar-categoria");
+
+    if (!nome) {
+        mensagem.textContent = "Informe o nome da categoria.";
+        mensagem.classList.add("erro");
+        return;
+    }
+
+    const ordem = Number(ordemTexto);
+
+    if (
+        ordemTexto === "" ||
+        !Number.isInteger(ordem) ||
+        ordem < 0 ||
+        ordem > 65535
+    ) {
+        mensagem.textContent = "Informe uma ordem válida entre 0 e 65535.";
+        mensagem.classList.add("erro");
+        return;
+    }
+
+    const dadosCategoria = {
+        name: nome,
+        description: descricao,
+        image_url: imagemUrl,
+        order: ordem,
+        active: $("#categoria-ativa").checked
+    };
+
+    botao.disabled = true;
+    mensagem.classList.remove("erro");
+    mensagem.textContent = "Salvando categoria...";
+
+    try {
+        await requisicao("/categorias", {
+            method: "POST",
+            body: JSON.stringify(dadosCategoria)
+        });
+
+        mensagem.textContent = "Categoria cadastrada com sucesso!";
+
+        mostrarMensagem("Categoria cadastrada com sucesso.");
+
+        await carregarCategorias();
+
+        fecharFormularioCategoria();
+
+    } catch (erro) {
+        mensagem.textContent = erro.message;
+        mensagem.classList.add("erro");
+    } finally {
+        botao.disabled = false;
+    }
+}
+
+/* Eventos do formulário de categorias */
+
+$("#btn-nova-categoria")?.addEventListener(
+    "click",
+    abrirFormularioCategoria
+);
+
+$("#btn-cancelar-categoria")?.addEventListener(
+    "click",
+    fecharFormularioCategoria
+);
+
+$("#form-categoria")?.addEventListener(
+    "submit",
+    salvarCategoria
+);
 
 function normalizarCategoria(categoria) {
     const valorAtivo =

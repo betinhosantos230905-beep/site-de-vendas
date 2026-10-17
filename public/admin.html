@@ -363,30 +363,132 @@
                 </section>
             </section>
 
+        
             <!-- CATEGORIAS -->
             <section id="secao-categorias" class="secao-admin" hidden>
 
                 <div class="page-heading">
                     <div>
                         <span class="eyebrow">CARDÁPIO</span>
-
                         <h1>Categorias</h1>
-
-                        <p>
-                            Consulte as categorias utilizadas nos produtos.
-                        </p>
+                        <p>Cadastre e organize as categorias do cardápio da SALTY.</p>
                     </div>
 
                     <button
-                        id="btn-atualizar-categorias"
-                        class="btn btn-light"
+                        id="btn-nova-categoria"
+                        class="btn btn-primary"
                         type="button"
                     >
-                        Atualizar categorias
+                        Nova categoria
                     </button>
                 </div>
 
-                <section class="lista-card">
+                <!-- FORMULÁRIO DE CATEGORIA -->
+                <section
+                    id="formulario-categoria-card"
+                    class="lista-card"
+                    hidden
+                >
+                    <h2>Cadastrar categoria</h2>
+
+                    <form id="form-categoria" class="admin-form">
+
+                        <label for="categoria-nome">Nome da categoria</label>
+                        <input
+                            id="categoria-nome"
+                            type="text"
+                            maxlength="60"
+                            placeholder="Ex.: Hambúrgueres"
+                            required
+                        >
+
+                        <label for="categoria-descricao">Descrição</label>
+                        <textarea
+                            id="categoria-descricao"
+                            maxlength="200"
+                            rows="3"
+                            placeholder="Descrição opcional"
+                        ></textarea>
+
+                        <label for="categoria-imagem">URL da imagem</label>
+                        <input
+                            id="categoria-imagem"
+                            type="url"
+                            maxlength="255"
+                            placeholder="https://..."
+                        >
+
+                        <label for="categoria-ordem">Ordem de exibição</label>
+                        <input
+                            id="categoria-ordem"
+                            type="number"
+                            min="0"
+                            max="65535"
+                            step="1"
+                            value="0"
+                            required
+                        >
+
+                        <label class="admin-check">
+                            <input
+                                id="categoria-ativa"
+                                type="checkbox"
+                                checked
+                            >
+                            Categoria ativa
+                        </label>
+
+                        <div class="admin-actions">
+                            <button
+                                id="btn-salvar-categoria"
+                                class="btn btn-primary"
+                                type="submit"
+                            >
+                                Salvar categoria
+                            </button>
+
+                            <button
+                                id="btn-cancelar-categoria"
+                                class="btn btn-light"
+                                type="button"
+                            >
+                                Cancelar
+                            </button>
+                        </div>
+
+                        <p
+                            id="mensagem-categoria"
+                            class="mensagem"
+                            role="status"
+                            aria-live="polite"
+                        ></p>
+                    </form>
+                </section>
+
+                <!-- LISTA DE CATEGORIAS -->
+                
+<div class="lista-heading">
+    <h2>Categorias cadastradas</h2>
+
+    <div class="admin-actions">
+        <button
+            id="btn-atualizar-categorias"
+            class="btn btn-light"
+            type="button"
+        >
+            Atualizar categorias
+        </button>
+
+        <button
+            id="btn-nova-categoria"
+            class="btn btn-primary"
+            type="button"
+        >
+            Adicionar categoria
+        </button>
+    </div>
+</div>
+
 
                     <div class="tabela-scroll">
                         <table>
@@ -401,21 +503,15 @@
 
                             <tbody id="lista-categorias">
                                 <tr>
-                                    <td colspan="4">
-                                        Carregue as categorias.
-                                    </td>
+                                    <td colspan="4">Carregue as categorias.</td>
                                 </tr>
                             </tbody>
                         </table>
                     </div>
 
-                    <p class="mensagem">
-                        A edição de categorias será adicionada depois da
-                        confirmação das rotas específicas.
-                    </p>
-
                 </section>
             </section>
+
 
             <!-- CUPONS -->
             <section id="secao-cupons" class="secao-admin" hidden>
