@@ -33,6 +33,7 @@ let pedidos = [];
 let produtos = [];
 let categorias = [];
 let cupons = [];
+let pagamentosFaturamento = [];
 
 function dinheiro(valor) {
     return Number(valor || 0).toLocaleString("pt-BR", {
@@ -101,7 +102,8 @@ function alternarAba(nome) {
         produtos: $("#secao-produtos"),
         categorias: $("#secao-categorias"),
         cupons: $("#secao-cupons"),
-        configuracoes: $("#secao-configuracoes")
+        configuracoes: $("#secao-configuracoes"),
+        faturamento: $("#secao-faturamento")
     };
 
     for (const [chave, secao] of Object.entries(secoes)) {
@@ -125,6 +127,7 @@ function alternarAba(nome) {
     if (nome === "categorias") carregarCategorias();
     if (nome === "cupons") carregarCupons();
     if (nome === "configuracoes") carregarConfiguracoes();
+    if (nome === "faturamento") carregarFaturamento();
 }
 
 document.querySelectorAll(".aba-admin").forEach((botao) => {
@@ -240,7 +243,7 @@ function renderizarPedidos() {
         const numero = pedido.numero || pedido.id || "—";
 
         const data = pedido.criado_em
-            ? new Date(pedido.criado_em).toLocaleString("pt-BR")
+            ? formatarDataHora(pedido.criado_em)
             : "—";
 
         linha.append(
@@ -459,8 +462,6 @@ async function carregarCategorias() {
         return true;
     } catch (erro) {
         categorias = [];
-        
-
 
         preencherSelectCategorias();
 
@@ -578,7 +579,6 @@ async function salvarCategoria(evento) {
         await carregarCategorias();
 
         fecharFormularioCategoria();
-
     } catch (erro) {
         mensagem.textContent = erro.message;
         mensagem.classList.add("erro");
@@ -590,6 +590,12 @@ async function salvarCategoria(evento) {
 /* Eventos do formulário de categorias */
 
 $("#btn-nova-categoria")?.addEventListener(
+    "click",
+    abrirFormularioCategoria
+);
+
+/* Compatibilidade com o botão adicional do HTML atualizado */
+$("#btn-adicionar-categoria")?.addEventListener(
     "click",
     abrirFormularioCategoria
 );
@@ -633,6 +639,8 @@ function normalizarCategoria(categoria) {
 
 function renderizarCategorias() {
     const lista = $("#lista-categorias");
+    if (!lista) return;
+
     lista.replaceChildren();
 
     if (!categorias.length) {
@@ -700,6 +708,8 @@ function preencherSelectCategorias() {
 
 async function carregarProdutos() {
     const lista = $("#lista-produtos");
+    if (!lista) return;
+
     lista.replaceChildren();
 
     const linha = elemento("tr");
@@ -733,6 +743,8 @@ async function carregarProdutos() {
 
 function renderizarProdutos() {
     const lista = $("#lista-produtos");
+    if (!lista) return;
+
     lista.replaceChildren();
 
     if (!produtos.length) {
@@ -842,7 +854,7 @@ function fecharFormularioProduto() {
     $("#produto-id").value = "";
 }
 
-$("#btn-novo-produto").addEventListener("click", async () => {
+$("#btn-novo-produto")?.addEventListener("click", async () => {
     const carregou = await carregarCategorias();
 
     if (!carregou) return;
@@ -850,9 +862,9 @@ $("#btn-novo-produto").addEventListener("click", async () => {
     abrirFormularioProduto();
 });
 
-$("#btn-cancelar-produto").addEventListener("click", fecharFormularioProduto);
+$("#btn-cancelar-produto")?.addEventListener("click", fecharFormularioProduto);
 
-$("#form-produto").addEventListener("submit", async (evento) => {
+$("#form-produto")?.addEventListener("submit", async (evento) => {
     evento.preventDefault();
 
     const id = $("#produto-id").value;
@@ -1030,7 +1042,7 @@ function formatarValorCupom(cupom) {
 function formatarDataCupom(data) {
     if (!data) return null;
 
-    const dataValida = new Date(data);
+    const dataValida = new Date(String(data).replace(" ", "T"));
 
     if (Number.isNaN(dataValida.getTime())) {
         return "Data inválida";
@@ -1390,6 +1402,227 @@ $("#form-taxa-entrega")?.addEventListener("submit", async (evento) => {
 });
 
 /* =========================
+   FATURAMENTO
+========================= */
+
+function formatarDataHora(data) {
+    if (!data) return "—";
+
+    const valor = String(data).replace(" ", "T");
+    const dataValida = new Date(valor);
+
+    if (Number.isNaN(dataValida.getTime())) {
+        return String(data);
+    }
+
+    return dataValida.toLocaleString("pt-BR");
+}
+
+function mostrarCamposPeriodoPersonalizado() {
+    const filtro = $("#filtro-periodo-faturamento");
+    const campos = $("#campos-periodo-personalizado");
+
+    if (!filtro || !campos) return;
+
+    campos.hidden = filtro.value !== "personalizado";
+}
+
+function montarParametrosFaturamento() {
+    const filtro = $("#filtro-periodo-faturamento");
+    const dataInicial = $("#faturamento-data-inicial");
+    const dataFinal = $("#faturamento-data-final");
+
+    const parametros = new URLSearchParams();
+    parametros.set("periodo", filtro?.value || "todo_periodo");
+
+    if (filtro?.value === "personalizado") {
+        if (!dataInicial?.value || !dataFinal?.value) {
+            throw new Error(
+                "Selecione a data inicial e a data final do período."
+            );
+        }
+
+        if (dataInicial.value > dataFinal.value) {
+            throw new Error(
+                "A data inicial não pode ser posterior à data final."
+            );
+        }
+
+        parametros.set("data_inicial", dataInicial.value);
+        parametros.set("data_final", dataFinal.value);
+    }
+
+    return parametros.toString();
+}
+
+async function carregarFaturamento() {
+    const lista = $("#lista-faturamento");
+    const mensagem = $("#mensagem-filtro-faturamento");
+
+    if (!lista) {
+        mostrarMensagem(
+            "A tabela de faturamento não foi encontrada no HTML.",
+            true
+        );
+        return;
+    }
+
+    lista.replaceChildren();
+
+    const linhaCarregando = elemento("tr");
+    const celulaCarregando = elemento("td", "", "Carregando faturamento...");
+    celulaCarregando.colSpan = 6;
+    linhaCarregando.append(celulaCarregando);
+    lista.append(linhaCarregando);
+
+    if (mensagem) mensagem.textContent = "";
+
+    try {
+        const query = montarParametrosFaturamento();
+        const dados = await requisicao(`/faturamento?${query}`);
+
+        pagamentosFaturamento = Array.isArray(dados.pagamentos)
+            ? dados.pagamentos
+            : [];
+
+        renderizarFaturamento(dados);
+
+        if (mensagem) {
+            mensagem.textContent = dados.periodo_descricao
+                ? `Período: ${dados.periodo_descricao}`
+                : "Faturamento atualizado.";
+        }
+    } catch (erro) {
+        lista.replaceChildren();
+
+        const linhaErro = elemento("tr");
+        const celulaErro = elemento("td", "", erro.message);
+        celulaErro.colSpan = 6;
+        linhaErro.append(celulaErro);
+        lista.append(linhaErro);
+
+        if ($("#faturamento-total")) {
+            $("#faturamento-total").textContent = dinheiro(0);
+        }
+
+        if ($("#faturamento-quantidade")) {
+            $("#faturamento-quantidade").textContent = "0";
+        }
+
+        if ($("#faturamento-ticket-medio")) {
+            $("#faturamento-ticket-medio").textContent = dinheiro(0);
+        }
+
+        if (mensagem) {
+            mensagem.textContent = "Não foi possível carregar o faturamento: " + erro.message;
+        }
+    }
+}
+
+function renderizarFaturamento(dados) {
+    const lista = $("#lista-faturamento");
+    if (!lista) return;
+
+    lista.replaceChildren();
+
+    const total = Number(dados.total || 0);
+    const quantidade = Number(dados.quantidade || 0);
+    const ticketMedio = Number(
+        dados.ticket_medio ??
+        (quantidade > 0 ? total / quantidade : 0)
+    );
+
+    if ($("#faturamento-total")) {
+        $("#faturamento-total").textContent = dinheiro(total);
+    }
+
+    if ($("#faturamento-quantidade")) {
+        $("#faturamento-quantidade").textContent =
+            quantidade.toLocaleString("pt-BR");
+    }
+
+    if ($("#faturamento-ticket-medio")) {
+        $("#faturamento-ticket-medio").textContent = dinheiro(ticketMedio);
+    }
+
+    if (!pagamentosFaturamento.length) {
+        const linha = elemento("tr");
+        const celula = elemento(
+            "td",
+            "",
+            "Nenhum pagamento confirmado encontrado neste período."
+        );
+        celula.colSpan = 6;
+        linha.append(celula);
+        lista.append(linha);
+        return;
+    }
+
+    for (const pagamento of pagamentosFaturamento) {
+        const linha = elemento("tr");
+
+        const idPagamento = pagamento.id ?? pagamento.id_pagamento ?? "—";
+        const numeroPedido =
+            pagamento.numero_pedido ??
+            pagamento.numero ??
+            pagamento.pedido_id ??
+            "—";
+
+        const dataPagamento = pagamento.pago_em
+            ? formatarDataHora(pagamento.pago_em)
+            : "—";
+
+        const forma = formatarFormaPagamento(pagamento.forma);
+        const valor = dinheiro(pagamento.valor);
+        const status = String(pagamento.status || "").toLowerCase() === "pago"
+            ? "Pago"
+            : (pagamento.status || "—");
+
+        linha.append(
+            elemento("td", "", String(idPagamento)),
+            elemento("td", "", `#${numeroPedido}`),
+            elemento("td", "", dataPagamento),
+            elemento("td", "", forma),
+            elemento("td", "", valor),
+            elemento("td", "", status)
+        );
+
+        lista.append(linha);
+    }
+}
+
+function formatarFormaPagamento(forma) {
+    const formas = {
+        pix: "Pix",
+        dinheiro: "Dinheiro",
+        cartao_entrega: "Cartão na entrega",
+        cartao: "Cartão",
+        credito: "Cartão de crédito",
+        debito: "Cartão de débito"
+    };
+
+    const valor = String(forma || "").toLowerCase();
+
+    return formas[valor] || forma || "—";
+}
+
+$("#filtro-periodo-faturamento")?.addEventListener("change", () => {
+    mostrarCamposPeriodoPersonalizado();
+
+    if ($("#filtro-periodo-faturamento").value !== "personalizado") {
+        carregarFaturamento();
+    }
+});
+
+$("#btn-aplicar-filtro-faturamento")?.addEventListener("click", () => {
+    carregarFaturamento();
+});
+
+$("#btn-atualizar-faturamento")?.addEventListener("click", () => {
+    carregarFaturamento();
+});
+
+/* =========================
    BOTÕES GERAIS
 ========================= */
 
@@ -1406,15 +1639,15 @@ botaoSair.addEventListener("click", async () => {
     mostrarLogin();
 });
 
-$("#btn-atualizar").addEventListener("click", carregarPedidos);
-$("#btn-atualizar-produtos").addEventListener("click", carregarProdutos);
-$("#btn-atualizar-categorias").addEventListener("click", carregarCategorias);
+$("#btn-atualizar")?.addEventListener("click", carregarPedidos);
+$("#btn-atualizar-produtos")?.addEventListener("click", carregarProdutos);
+$("#btn-atualizar-categorias")?.addEventListener("click", carregarCategorias);
 
-$("#btn-fechar").addEventListener("click", () => {
+$("#btn-fechar")?.addEventListener("click", () => {
     dialogDetalhes.close();
 });
 
-$("#btn-imprimir").addEventListener("click", () => {
+$("#btn-imprimir")?.addEventListener("click", () => {
     window.print();
 });
 
@@ -1422,4 +1655,5 @@ $("#btn-imprimir").addEventListener("click", () => {
    INICIALIZAÇÃO
 ========================= */
 
+mostrarCamposPeriodoPersonalizado();
 verificarSessao();

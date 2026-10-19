@@ -2,7 +2,8 @@
 import os
 from functools import wraps
 from pathlib import Path
-from datetime import datetime
+from datetime import datetime, date, time, timedelta
+from zoneinfo import ZoneInfo
 from decimal import Decimal, InvalidOperation
 
 from flask import Blueprint, jsonify, request, session
@@ -207,7 +208,8 @@ def detalhar_pedido(pedido_id):
                 forma,
                 valor,
                 troco_para,
-                status
+                status,
+                pago_em
             FROM pagamentos
             WHERE pedido_id = %s
             ORDER BY id DESC
@@ -324,6 +326,260 @@ def atualizar_status_pedido(pedido_id):
 
 
 # ==========================================
+
+# ==========================================
+# FATURAMENTO
+# Considera somente pagamentos confirmados
+# ==========================================
+
+@admin_bp.get("/faturamento")
+@exigir_login_admin
+def consultar_faturamento_admin():
+    periodo = (
+        request.args.get("periodo", "todo_periodo").strip()
+    )
+
+    descricoes_periodo = {
+        "todo_periodo": "Todo o período",
+        "hoje": "Hoje",
+        "ontem": "Ontem",
+        "ultimos_7_dias": "Últimos 7 dias",
+        "ultimos_30_dias": "Últimos 30 dias",
+        "mes_atual": "Mês atual",
+        "mes_anterior": "Mês anterior",
+        "ano_atual": "Ano atual",
+        "personalizado": "Período personalizado",
+    }
+
+    if periodo not in descricoes_periodo:
+        return jsonify({
+            "error": "O período informado é inválido."
+        }), 400
+
+    inicio = None
+    fim = None
+
+    hoje = datetime.now(
+        ZoneInfo("America/Sao_Paulo")
+    ).date()
+
+    if periodo == "hoje":
+        inicio = datetime.combine(hoje, time.min)
+        fim = inicio + timedelta(days=1)
+
+    elif periodo == "ontem":
+        ontem = hoje - timedelta(days=1)
+        inicio = datetime.combine(ontem, time.min)
+        fim = inicio + timedelta(days=1)
+
+    elif periodo == "ultimos_7_dias":
+        inicio = datetime.combine(
+            hoje - timedelta(days=6),
+            time.min
+        )
+        fim = datetime.combine(
+            hoje + timedelta(days=1),
+            time.min
+        )
+
+    elif periodo == "ultimos_30_dias":
+        inicio = datetime.combine(
+            hoje - timedelta(days=29),
+            time.min
+        )
+        fim = datetime.combine(
+            hoje + timedelta(days=1),
+            time.min
+        )
+
+    elif periodo == "mes_atual":
+        inicio = datetime(hoje.year, hoje.month, 1)
+
+        if hoje.month == 12:
+            proximo_mes = date(hoje.year + 1, 1, 1)
+        else:
+            proximo_mes = date(
+                hoje.year,
+                hoje.month + 1,
+                1
+            )
+
+        fim = datetime.combine(proximo_mes, time.min)
+
+    elif periodo == "mes_anterior":
+        primeiro_deste_mes = date(
+            hoje.year,
+            hoje.month,
+            1
+        )
+
+        ultimo_mes = primeiro_deste_mes - timedelta(days=1)
+
+        inicio = datetime(
+            ultimo_mes.year,
+            ultimo_mes.month,
+            1
+        )
+
+        fim = datetime.combine(
+            primeiro_deste_mes,
+            time.min
+        )
+
+    elif periodo == "ano_atual":
+        inicio = datetime(hoje.year, 1, 1)
+        fim = datetime(hoje.year + 1, 1, 1)
+
+    elif periodo == "personalizado":
+        try:
+            data_inicial = date.fromisoformat(
+                request.args.get(
+                    "data_inicial", ""
+                ).strip()
+            )
+
+            data_final = date.fromisoformat(
+                request.args.get(
+                    "data_final", ""
+                ).strip()
+            )
+
+            if data_final < data_inicial:
+                raise ValueError
+
+            inicio = datetime.combine(
+                data_inicial,
+                time.min
+            )
+
+            fim = datetime.combine(
+                data_final + timedelta(days=1),
+                time.min
+            )
+
+        except (ValueError, TypeError, OverflowError):
+            return jsonify({
+                "error": (
+                    "Informe datas válidas. "
+                    "A data final não pode ser anterior "
+                    "à data inicial."
+                )
+            }), 400
+
+    conexao = None
+    cursor = None
+
+    try:
+        conexao = get_connection()
+        cursor = conexao.cursor(dictionary=True)
+
+        sql = """
+            SELECT
+                pg.id AS id,
+                pg.id AS pagamento_id,
+                pg.pedido_id,
+                pe.numero AS numero_pedido,
+                pe.nome_cliente,
+                pg.forma,
+                pg.valor,
+                pg.status,
+                pg.pago_em
+            FROM pagamentos AS pg
+            INNER JOIN pedidos AS pe
+                ON pe.id = pg.pedido_id
+            WHERE pg.status = 'pago'
+              AND pg.pago_em IS NOT NULL
+        """
+
+        parametros = []
+
+        if inicio is not None and fim is not None:
+            sql += """
+                AND pg.pago_em >= %s
+                AND pg.pago_em < %s
+            """
+
+            parametros.extend([inicio, fim])
+
+        sql += """
+            ORDER BY pg.pago_em DESC, pg.id DESC
+        """
+
+        cursor.execute(sql, tuple(parametros))
+        registros = cursor.fetchall()
+
+        pagamentos = []
+        total = Decimal("0.00")
+
+        for registro in registros:
+            valor = Decimal(str(registro["valor"]))
+            total += valor
+
+            pago_em = registro["pago_em"]
+
+            pagamentos.append({
+                "id": int(registro["id"]),
+                "pagamento_id": int(
+                    registro["pagamento_id"]
+                ),
+                "pedido_id": int(registro["pedido_id"]),
+                "numero_pedido": registro["numero_pedido"],
+                "nome_cliente": registro["nome_cliente"],
+                "forma": registro["forma"],
+                "valor": float(valor),
+                "status": registro["status"],
+                "pago_em": (
+                    pago_em.isoformat(
+                        sep=" ",
+                        timespec="seconds"
+                    )
+                    if pago_em
+                    else None
+                ),
+            })
+
+        quantidade = len(pagamentos)
+
+        ticket_medio = (
+            total / quantidade
+            if quantidade > 0
+            else Decimal("0.00")
+        )
+
+        return jsonify({
+            "periodo": periodo,
+            "periodo_descricao": descricoes_periodo[periodo],
+            "data_inicial": (
+                inicio.date().isoformat()
+                if inicio is not None
+                else None
+            ),
+            "data_final": (
+                (fim - timedelta(days=1)).date().isoformat()
+                if fim is not None
+                else None
+            ),
+            "total": float(total),
+            "quantidade": quantidade,
+            "ticket_medio": float(
+                ticket_medio.quantize(Decimal("0.01"))
+            ),
+            "pagamentos": pagamentos,
+        }), 200
+
+    except Exception:
+        return jsonify({
+            "error": "Não foi possível consultar o faturamento."
+        }), 500
+
+    finally:
+        if cursor:
+            cursor.close()
+
+        if conexao:
+            conexao.close()
+
+# ==========================================
 # GERENCIAMENTO DE CATEGORIAS
 # ==========================================
 
@@ -397,14 +653,16 @@ def cadastrar_categoria_admin():
     imagem_url = str(dados.get("image_url") or "").strip()
 
     try:
-        ordem = int(dados.get("order", 0))
+        ordem_recebida = dados.get("order", 0)
 
-        if isinstance(dados.get("order", 0), bool):
+        if isinstance(ordem_recebida, bool):
             raise ValueError
+
+        ordem = int(ordem_recebida)
 
     except (TypeError, ValueError, OverflowError):
         return jsonify({
-            "error": "Informe uma ordem valida."
+            "error": "Informe uma ordem válida."
         }), 400
 
     ativo = dados.get("active", True)
@@ -421,12 +679,12 @@ def cadastrar_categoria_admin():
 
     if len(descricao) > 200:
         return jsonify({
-            "error": "A descricao pode ter ate 200 caracteres."
+            "error": "A descrição pode ter até 200 caracteres."
         }), 400
 
     if len(imagem_url) > 255:
         return jsonify({
-            "error": "O endereco da imagem pode ter ate 255 caracteres."
+            "error": "O endereço da imagem pode ter até 255 caracteres."
         }), 400
 
     if ordem < 0 or ordem > 65535:
@@ -472,11 +730,11 @@ def cadastrar_categoria_admin():
 
         if getattr(erro, "errno", None) == 1062:
             return jsonify({
-                "error": "Ja existe uma categoria com esse nome."
+                "error": "Já existe uma categoria com esse nome."
             }), 409
 
         return jsonify({
-            "error": "Nao foi possivel cadastrar a categoria."
+            "error": "Não foi possível cadastrar a categoria."
         }), 500
 
     finally:
@@ -485,6 +743,7 @@ def cadastrar_categoria_admin():
 
         if conexao:
             conexao.close()
+
 
 # ==========================================
 # VALIDAÇÃO DOS PRODUTOS
@@ -523,7 +782,6 @@ def validar_dados_produto(dados):
     ):
         return None, "Informe um preço válido."
 
-    # Preço promocional: opcional.
     preco_promocional_texto = dados.get("promo_price")
 
     if preco_promocional_texto in (None, ""):
@@ -568,10 +826,10 @@ def validar_dados_produto(dados):
     destaque = dados.get("featured", False)
 
     if not isinstance(disponivel, bool):
-        return None, "O campo de disponibilidade deve ser verdadeiro ou falso."
+        return None, "A disponibilidade deve ser verdadeira ou falsa."
 
     if not isinstance(destaque, bool):
-        return None, "O campo de destaque deve ser verdadeiro ou falso."
+        return None, "O destaque deve ser verdadeiro ou falso."
 
     produto = {
         "category_id": categoria_id,
@@ -626,7 +884,12 @@ def listar_produtos_admin():
 
         for produto in produtos:
             produto["id"] = int(produto["id"])
-            produto["category_id"] = int(produto["category_id"])
+
+            if produto["category_id"] is not None:
+                produto["category_id"] = int(
+                    produto["category_id"]
+                )
+
             produto["price"] = float(produto["price"])
 
             if produto["promo_price"] is not None:
@@ -830,7 +1093,6 @@ def editar_produto_admin(produto_id):
 
 # ==========================================
 # DUPLICAR PRODUTO
-# A cópia começa sem preço promocional.
 # ==========================================
 
 @admin_bp.post("/produtos/<int:produto_id>/duplicar")
