@@ -1,9 +1,11 @@
 
+
+
+import hmac
 import os
 from functools import wraps
-from pathlib import Path
-from datetime import datetime, date, time, timedelta
-from zoneinfo import ZoneInfo
+from datetime import datetime, date, time, timedelta, timezone
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 from decimal import Decimal, InvalidOperation
 
 from flask import Blueprint, jsonify, request, session
@@ -22,6 +24,27 @@ STATUS_VALIDOS = {
     "entregue",
     "cancelado",
 }
+
+
+def agora_brasil():
+    try:
+        return datetime.now(ZoneInfo("America/Sao_Paulo"))
+    except ZoneInfoNotFoundError:
+        # Windows sem o pacote tzdata: usa UTC-3 (Brasil sem horário de verão)
+        return datetime.now(timezone(timedelta(hours=-3)))
+
+
+def serializar_registro(registro):
+    """Converte datas e Decimal para tipos que o JSON entende."""
+    for chave, valor in registro.items():
+        if isinstance(valor, datetime):
+            registro[chave] = valor.isoformat(sep=" ", timespec="seconds")
+        elif isinstance(valor, date):
+            registro[chave] = valor.isoformat()
+        elif isinstance(valor, Decimal):
+            registro[chave] = float(valor)
+
+    return registro
 
 
 # ==========================================
@@ -46,31 +69,17 @@ def login_admin():
     dados = request.get_json(silent=True) or {}
 
     senha = dados.get("senha", "")
-    senha_correta = os.getenv("SALTY_ADMIN_PASSWORD", "")
-
-    # Diagnóstico temporário: não exibe nenhuma senha.
-    print("\n--- DIAGNOSTICO DO LOGIN ADMIN ---", flush=True)
-    print("ARQUIVO DA ROTA:", __file__, flush=True)
-    print("PASTA ATUAL:", Path.cwd(), flush=True)
-    print("SENHA CONFIGURADA:", bool(senha_correta), flush=True)
-    print("TAMANHO CONFIGURADO:", len(senha_correta), flush=True)
-    print("TIPO DA SENHA RECEBIDA:", type(senha).__name__, flush=True)
-
-    if isinstance(senha, str):
-        print("TAMANHO RECEBIDO:", len(senha), flush=True)
-        print("SENHAS IGUAIS:", senha == senha_correta, flush=True)
-    else:
-        print("TAMANHO RECEBIDO: inválido", flush=True)
-        print("SENHAS IGUAIS: False", flush=True)
-
-    print("--- FIM DO DIAGNOSTICO ---\n", flush=True)
+    senha_correta = os.getenv("SALTY_ADMIN_PASSWORD", "").strip()
 
     if not senha_correta:
         return jsonify({
             "error": "Senha administrativa não configurada."
         }), 500
 
-    if not isinstance(senha, str) or senha != senha_correta:
+    if not isinstance(senha, str) or not hmac.compare_digest(
+        senha.encode("utf-8"),
+        senha_correta.encode("utf-8")
+    ):
         return jsonify({
             "error": "Senha incorreta."
         }), 401
@@ -93,10 +102,9 @@ def logout_admin():
 
 
 @admin_bp.get("/sessao")
-@exigir_login_admin
 def verificar_sessao_admin():
     return jsonify({
-        "autenticado": True
+        "autenticado": bool(session.get("admin_logado"))
     }), 200
 
 
@@ -132,7 +140,7 @@ def listar_pedidos():
             LIMIT 100
         """)
 
-        pedidos = cursor.fetchall()
+        pedidos = [serializar_registro(p) for p in cursor.fetchall()]
 
         return jsonify({
             "pedidos": pedidos
@@ -188,7 +196,7 @@ def detalhar_pedido(pedido_id):
             ORDER BY id
         """, (pedido_id,))
 
-        itens = cursor.fetchall()
+        itens = [serializar_registro(i) for i in cursor.fetchall()]
 
         for item in itens:
             cursor.execute("""
@@ -201,7 +209,9 @@ def detalhar_pedido(pedido_id):
                 ORDER BY id
             """, (item["id"],))
 
-            item["opcoes"] = cursor.fetchall()
+            item["opcoes"] = [
+                serializar_registro(o) for o in cursor.fetchall()
+            ]
 
         cursor.execute("""
             SELECT
@@ -215,10 +225,11 @@ def detalhar_pedido(pedido_id):
             ORDER BY id DESC
         """, (pedido_id,))
 
-        pagamentos = cursor.fetchall()
+        pagamentos = [serializar_registro(p) for p in cursor.fetchall()]
 
         pedido["itens"] = itens
         pedido["pagamentos"] = pagamentos
+        serializar_registro(pedido)
 
         return jsonify({
             "pedido": pedido
@@ -359,9 +370,7 @@ def consultar_faturamento_admin():
     inicio = None
     fim = None
 
-    hoje = datetime.now(
-        ZoneInfo("America/Sao_Paulo")
-    ).date()
+    hoje = agora_brasil().date()
 
     if periodo == "hoje":
         inicio = datetime.combine(hoje, time.min)
@@ -1757,3 +1766,5 @@ def atualizar_taxa_entrega_admin():
 
         if conexao:
             conexao.close()
+ 
+

@@ -1,23 +1,31 @@
-﻿
+﻿/* SALTY — Painel administrativo */
+"use strict";
+
+/* =========================
+   STATUS E VARIÁVEIS
+========================= */
+
 const STATUS = {
-    recebido: "Recebido",
-    confirmado: "Confirmado",
-    em_preparo: "Em preparo",
-    pronto_retirada: "Pronto para retirada",
-    saiu_entrega: "Saiu para entrega",
-    entregue: "Entregue",
-    cancelado: "Cancelado"
+  recebido: "Recebido",
+  confirmado: "Confirmado",
+  em_preparo: "Em preparo",
+  pronto_retirada: "Pronto para retirada",
+  saiu_entrega: "Saiu para entrega",
+  entregue: "Entregue",
+  cancelado: "Cancelado"
 };
 
 const STATUS_ABERTOS = [
-    "recebido",
-    "confirmado",
-    "em_preparo",
-    "pronto_retirada",
-    "saiu_entrega"
+  "recebido",
+  "confirmado",
+  "em_preparo",
+  "pronto_retirada",
+  "saiu_entrega"
 ];
 
-const $ = (seletor) => document.querySelector(seletor);
+const $ = (seletor, raiz = document) => raiz.querySelector(seletor);
+const $$ = (seletor, raiz = document) =>
+  [...raiz.querySelectorAll(seletor)];
 
 const telaLogin = $("#tela-login");
 const telaPainel = $("#tela-painel");
@@ -33,945 +41,1251 @@ let pedidos = [];
 let produtos = [];
 let categorias = [];
 let cupons = [];
+let faturamento = null;
+
+/* =========================
+   FUNÇÕES AUXILIARES
+========================= */
 
 function dinheiro(valor) {
-    return Number(valor || 0).toLocaleString("pt-BR", {
-        style: "currency",
-        currency: "BRL"
-    });
-}
+  const numero = Number(valor ?? 0);
 
-function elemento(tag, classe, texto) {
-    const el = document.createElement(tag);
-
-    if (classe) el.className = classe;
-    if (texto !== undefined) el.textContent = texto;
-
-    return el;
-}
-
-async function requisicao(caminho, opcoes = {}) {
-    const resposta = await fetch(`/api/admin${caminho}`, {
-        credentials: "same-origin",
-        ...opcoes,
-        headers: {
-            "Content-Type": "application/json",
-            ...(opcoes.headers || {})
-        }
-    });
-
-    const dados = await resposta.json().catch(() => ({}));
-
-    if (!resposta.ok) {
-        throw new Error(
-            dados.error ||
-            dados.erro ||
-            dados.mensagem ||
-            "Não foi possível concluir a operação."
-        );
+  return (Number.isFinite(numero) ? numero : 0).toLocaleString(
+    "pt-BR",
+    {
+      style: "currency",
+      currency: "BRL"
     }
-
-    return dados;
+  );
 }
 
-function mostrarPainel() {
-    telaLogin.hidden = true;
-    telaPainel.hidden = false;
-    botaoSair.hidden = false;
+// Aceita "12,50" e "12.50"
+function numeroBR(texto) {
+  return Number(String(texto ?? "").trim().replace(",", "."));
 }
 
-function mostrarLogin() {
-    telaLogin.hidden = false;
-    telaPainel.hidden = true;
-    botaoSair.hidden = true;
+function elemento(tag, classe = "", texto = "") {
+  const el = document.createElement(tag);
+
+  if (classe) el.className = classe;
+
+  if (texto !== undefined && texto !== null) {
+    el.textContent = texto;
+  }
+
+  return el;
+}
+
+function definirTexto(seletor, texto) {
+  const el = $(seletor);
+  if (el) el.textContent = texto ?? "";
 }
 
 function mostrarMensagem(texto, erro = false) {
-    mensagemPainel.textContent = texto;
-    mensagemPainel.classList.toggle("erro", erro);
+  if (!mensagemPainel) return;
+
+  mensagemPainel.textContent = texto || "";
+  mensagemPainel.classList.toggle("erro", Boolean(erro));
+}
+
+function mostrarMensagemElemento(el, texto, erro = false) {
+  if (!el) return;
+
+  el.textContent = texto || "";
+  el.classList.toggle("erro", Boolean(erro));
+}
+
+function arrayDaResposta(dados, chaves = []) {
+  if (Array.isArray(dados)) return dados;
+
+  for (const chave of chaves) {
+    if (Array.isArray(dados?.[chave])) {
+      return dados[chave];
+    }
+  }
+
+  return [];
+}
+
+function boolValor(valor, padrao = false) {
+  if (valor == null) return padrao;
+
+  if (typeof valor === "string") {
+    return ["1", "true", "sim", "ativo", "yes"].includes(
+      valor.toLowerCase()
+    );
+  }
+
+  return valor === true || valor === 1;
+}
+
+function mostrarErroTabela(seletor, mensagem, colSpan = 6) {
+  const lista = $(seletor);
+  if (!lista) return;
+
+  lista.replaceChildren();
+
+  const tr = elemento("tr");
+  const td = elemento("td", "", mensagem);
+
+  td.colSpan = colSpan;
+  tr.append(td);
+  lista.append(tr);
+}
+
+function dataHoraBR(valor) {
+  if (!valor) return "—";
+
+  const data = new Date(valor);
+
+  return Number.isNaN(data.getTime())
+    ? String(valor)
+    : data.toLocaleString("pt-BR");
+}
+
+function formatarDataCupom(valor) {
+  if (!valor) return "";
+
+  const data = new Date(valor);
+
+  return Number.isNaN(data.getTime())
+    ? String(valor)
+    : data.toLocaleString("pt-BR");
+}
+
+// Converte data da API para o formato do input datetime-local
+function valorParaInputDataHora(valor) {
+  if (!valor) return "";
+
+  const texto = String(valor);
+
+  const semFuso =
+    /^\d{4}-\d{2}-\d{2}[ T]\d{2}:\d{2}/.test(texto) &&
+    !/(Z|[+-]\d{2}:?\d{2})$/.test(texto);
+
+  if (semFuso) {
+    return texto.replace(" ", "T").slice(0, 16);
+  }
+
+  const data = new Date(valor);
+  if (Number.isNaN(data.getTime())) return "";
+
+  const p = n => String(n).padStart(2, "0");
+
+  return (
+    `${data.getFullYear()}-${p(data.getMonth() + 1)}-${p(data.getDate())}` +
+    `T${p(data.getHours())}:${p(data.getMinutes())}`
+  );
 }
 
 /* =========================
-   NAVEGAÇÃO ENTRE ABAS
+   REQUISIÇÕES À API
 ========================= */
 
-function alternarAba(nome) {
-    const secoes = {
-        pedidos: $("#secao-pedidos"),
-        produtos: $("#secao-produtos"),
-        categorias: $("#secao-categorias"),
-        cupons: $("#secao-cupons"),
-        configuracoes: $("#secao-configuracoes")
-    };
+async function requisicao(caminho, opcoes = {}) {
+  const cabecalhos = {
+    ...(opcoes.body ? { "Content-Type": "application/json" } : {}),
+    ...(opcoes.headers || {})
+  };
 
-    for (const [chave, secao] of Object.entries(secoes)) {
-        if (secao) {
-            secao.hidden = chave !== nome;
-        }
+  const resposta = await fetch(`/api/admin${caminho}`, {
+    credentials: "same-origin",
+    ...opcoes,
+    headers: cabecalhos
+  });
+
+  const texto = await resposta.text();
+  let dados = {};
+
+  if (texto) {
+    try {
+      dados = JSON.parse(texto);
+    } catch {
+      dados = { mensagem: texto };
+    }
+  }
+
+  if (!resposta.ok) {
+    // Sessão expirada: volta para o login
+    if (
+      resposta.status === 401 &&
+      !["/login", "/sessao"].includes(caminho)
+    ) {
+      mostrarLogin();
     }
 
-    document.querySelectorAll(".aba-admin").forEach((botao) => {
-        const ativa = botao.dataset.aba === nome;
+    throw new Error(
+      dados.error ||
+      dados.erro ||
+      dados.mensagem ||
+      `Erro na requisição: ${resposta.status}.`
+    );
+  }
 
-        botao.classList.toggle("ativa", ativa);
-        botao.classList.toggle("btn-primary", ativa);
-        botao.classList.toggle("btn-light", !ativa);
-    });
-
-    mostrarMensagem("");
-
-    if (nome === "pedidos") carregarPedidos();
-    if (nome === "produtos") carregarProdutos();
-    if (nome === "categorias") carregarCategorias();
-    if (nome === "cupons") carregarCupons();
-    if (nome === "configuracoes") carregarConfiguracoes();
+  return dados;
 }
-
-document.querySelectorAll(".aba-admin").forEach((botao) => {
-    botao.addEventListener("click", () => {
-        alternarAba(botao.dataset.aba);
-    });
-});
 
 /* =========================
    LOGIN E SESSÃO
 ========================= */
 
-formLogin.addEventListener("submit", async (evento) => {
+function mostrarPainel() {
+  if (telaLogin) telaLogin.hidden = true;
+  if (telaPainel) telaPainel.hidden = false;
+  if (botaoSair) botaoSair.hidden = false;
+}
+
+function mostrarLogin() {
+  if (telaLogin) telaLogin.hidden = false;
+  if (telaPainel) telaPainel.hidden = true;
+  if (botaoSair) botaoSair.hidden = true;
+}
+
+if (formLogin) {
+  formLogin.addEventListener("submit", async evento => {
     evento.preventDefault();
-    erroLogin.textContent = "Verificando acesso...";
+
+    mostrarMensagemElemento(
+      erroLogin,
+      "Verificando acesso..."
+    );
 
     try {
-        await requisicao("/login", {
-            method: "POST",
-            body: JSON.stringify({ senha: campoSenha.value })
-        });
+      await requisicao("/login", {
+        method: "POST",
+        body: JSON.stringify({
+          senha: campoSenha?.value || ""
+        })
+      });
 
-        campoSenha.value = "";
-        erroLogin.textContent = "";
+      if (campoSenha) campoSenha.value = "";
 
-        mostrarPainel();
-        await carregarPedidos();
+      mostrarMensagemElemento(erroLogin, "");
+      mostrarPainel();
+
+      // alternarAba já carrega os pedidos
+      alternarAba("pedidos");
     } catch (erro) {
-        erroLogin.textContent = erro.message;
+      mostrarMensagemElemento(erroLogin, erro.message, true);
     }
-});
+  });
+}
 
 async function verificarSessao() {
-    try {
-        const dados = await requisicao("/sessao");
+  try {
+    const dados = await requisicao("/sessao");
 
-        if (dados.autenticado) {
-            mostrarPainel();
-            await carregarPedidos();
-        } else {
-            mostrarLogin();
-        }
-    } catch {
-        mostrarLogin();
+    if (dados.autenticado) {
+      mostrarPainel();
+      alternarAba("pedidos");
+    } else {
+      mostrarLogin();
     }
+  } catch {
+    mostrarLogin();
+  }
 }
+
+if (botaoSair) {
+  botaoSair.addEventListener("click", async () => {
+    try {
+      await requisicao("/logout", {
+        method: "POST",
+        body: "{}"
+      });
+    } catch (erro) {
+      console.error("Erro ao sair:", erro);
+    }
+
+    mostrarLogin();
+  });
+}
+
+/* =========================
+   NAVEGAÇÃO
+========================= */
+
+const SECOES = {
+  pedidos: "#secao-pedidos",
+  produtos: "#secao-produtos",
+  categorias: "#secao-categorias",
+  cupons: "#secao-cupons",
+  faturamento: "#secao-faturamento",
+  configuracoes: "#secao-configuracoes"
+};
+
+const CARREGADORES = {
+  pedidos: carregarPedidos,
+  produtos: carregarProdutos,
+  categorias: carregarCategorias,
+  cupons: carregarCupons,
+  faturamento: carregarFaturamento,
+  configuracoes: carregarConfiguracoes
+};
+
+function alternarAba(nome) {
+  for (const [chave, seletor] of Object.entries(SECOES)) {
+    const secao = $(seletor);
+
+    if (secao) {
+      secao.hidden = chave !== nome;
+    }
+  }
+
+  $$(".aba-admin").forEach(botao => {
+    const ativa = botao.dataset.aba === nome;
+
+    botao.classList.toggle("ativa", ativa);
+    botao.classList.toggle("btn-primary", ativa);
+    botao.classList.toggle("btn-light", !ativa);
+  });
+
+  mostrarMensagem("");
+
+  if (CARREGADORES[nome]) {
+    CARREGADORES[nome]();
+  }
+}
+
+$$(".aba-admin").forEach(botao => {
+  botao.addEventListener("click", () => {
+    alternarAba(botao.dataset.aba);
+  });
+});
 
 /* =========================
    PEDIDOS
 ========================= */
 
 async function carregarPedidos() {
-    listaPedidos.replaceChildren();
+  if (!listaPedidos) return;
 
-    const linha = elemento("tr");
-    const celula = elemento("td", "", "Carregando pedidos...");
-    celula.colSpan = 6;
-    linha.append(celula);
-    listaPedidos.append(linha);
+  mostrarErroTabela(
+    "#lista-pedidos",
+    "Carregando pedidos...",
+    6
+  );
 
-    mostrarMensagem("");
+  mostrarMensagem("");
 
-    try {
-        const dados = await requisicao("/pedidos");
+  try {
+    const dados = await requisicao("/pedidos");
 
-        pedidos = Array.isArray(dados)
-            ? dados
-            : (dados.pedidos || dados.data || []);
-
-        renderizarPedidos();
-    } catch (erro) {
-        listaPedidos.replaceChildren();
-
-        const linhaErro = elemento("tr");
-        const celulaErro = elemento("td", "", erro.message);
-        celulaErro.colSpan = 6;
-        linhaErro.append(celulaErro);
-        listaPedidos.append(linhaErro);
-
-        mostrarMensagem("Não foi possível carregar os pedidos.", true);
-    }
+    pedidos = arrayDaResposta(dados, ["pedidos", "data", "items"]);
+    renderizarPedidos();
+  } catch (erro) {
+    mostrarErroTabela("#lista-pedidos", erro.message, 6);
+    mostrarMensagem("Não foi possível carregar os pedidos.", true);
+  }
 }
 
 function renderizarPedidos() {
-    listaPedidos.replaceChildren();
+  if (!listaPedidos) return;
 
-    $("#total-pedidos").textContent = pedidos.length;
+  listaPedidos.replaceChildren();
 
-    const abertos = pedidos.filter((pedido) =>
-        STATUS_ABERTOS.includes(String(pedido.status || "").toLowerCase())
-    );
+  definirTexto("#total-pedidos", pedidos.length);
 
-    $("#pedidos-abertos").textContent = abertos.length;
+  definirTexto(
+    "#pedidos-abertos",
+    pedidos.filter(p =>
+      STATUS_ABERTOS.includes(
+        String(p.status || "").toLowerCase()
+      )
+    ).length
+  );
 
-    const total = pedidos.reduce(
+  definirTexto(
+    "#valor-pedidos",
+    dinheiro(
+      pedidos.reduce(
         (soma, pedido) => soma + Number(pedido.total || 0),
         0
+      )
+    )
+  );
+
+  if (!pedidos.length) {
+    mostrarErroTabela(
+      "#lista-pedidos",
+      "Nenhum pedido encontrado.",
+      6
+    );
+    return;
+  }
+
+  pedidos.forEach(pedido => {
+    const tr = elemento("tr");
+
+    const numero =
+      pedido.numero ||
+      pedido.numero_pedido ||
+      pedido.id ||
+      "—";
+
+    const data = pedido.criado_em
+      ? dataHoraBR(pedido.criado_em)
+      : "—";
+
+    tr.append(
+      elemento("td", "", `#${numero}`),
+      elemento("td", "", pedido.nome_cliente || "Cliente"),
+      elemento("td", "", data),
+      elemento("td", "", dinheiro(pedido.total))
     );
 
-    $("#valor-pedidos").textContent = dinheiro(total);
+    const tdStatus = elemento("td");
+    const select = document.createElement("select");
 
-    if (!pedidos.length) {
-        const linha = elemento("tr");
-        const celula = elemento("td", "", "Nenhum pedido encontrado.");
-        celula.colSpan = 6;
-        linha.append(celula);
-        listaPedidos.append(linha);
-        return;
-    }
+    Object.entries(STATUS).forEach(([valor, nome]) => {
+      const opcao = elemento("option", "", nome);
 
-    for (const pedido of pedidos) {
-        const linha = elemento("tr");
-        const numero = pedido.numero || pedido.id || "—";
+      opcao.value = valor;
+      opcao.selected =
+        String(pedido.status || "").toLowerCase() === valor;
 
-        const data = pedido.criado_em
-            ? new Date(pedido.criado_em).toLocaleString("pt-BR")
-            : "—";
+      select.append(opcao);
+    });
 
-        linha.append(
-            elemento("td", "", `#${numero}`),
-            elemento("td", "", pedido.nome_cliente || "Cliente"),
-            elemento("td", "", data),
-            elemento("td", "", dinheiro(pedido.total))
-        );
+    select.addEventListener("change", () => {
+      alterarStatus(pedido.id, select.value, select);
+    });
 
-        const celulaStatus = elemento("td");
-        const seletor = document.createElement("select");
+    tdStatus.append(select);
 
-        for (const [valor, nome] of Object.entries(STATUS)) {
-            const opcao = document.createElement("option");
-            opcao.value = valor;
-            opcao.textContent = nome;
-            opcao.selected =
-                String(pedido.status || "").toLowerCase() === valor;
+    const tdAcoes = elemento("td");
+    const botaoDetalhes = elemento(
+      "button",
+      "btn btn-light",
+      "Detalhes"
+    );
 
-            seletor.append(opcao);
-        }
+    botaoDetalhes.type = "button";
+    botaoDetalhes.addEventListener("click", () => {
+      abrirDetalhes(pedido.id);
+    });
 
-        seletor.addEventListener("change", () => {
-            alterarStatus(pedido.id, seletor.value, seletor);
-        });
+    tdAcoes.append(botaoDetalhes);
+    tr.append(tdStatus, tdAcoes);
 
-        celulaStatus.append(seletor);
-
-        const celulaAcoes = elemento("td");
-        const botaoDetalhes = elemento("button", "btn btn-light", "Detalhes");
-        botaoDetalhes.type = "button";
-        botaoDetalhes.addEventListener("click", () => {
-            abrirDetalhes(pedido.id);
-        });
-
-        celulaAcoes.append(botaoDetalhes);
-        linha.append(celulaStatus, celulaAcoes);
-        listaPedidos.append(linha);
-    }
+    listaPedidos.append(tr);
+  });
 }
 
-async function alterarStatus(id, status, seletor) {
-    seletor.disabled = true;
-    mostrarMensagem("Atualizando status...");
+async function alterarStatus(id, status, select) {
+  if (select) select.disabled = true;
 
-    try {
-        await requisicao(`/pedidos/${id}/status`, {
-            method: "PATCH",
-            body: JSON.stringify({ status })
-        });
+  mostrarMensagem("Atualizando status...");
 
-        mostrarMensagem("Status atualizado.");
-        await carregarPedidos();
-    } catch (erro) {
-        mostrarMensagem(erro.message, true);
-        await carregarPedidos();
-    } finally {
-        seletor.disabled = false;
-    }
+  try {
+    await requisicao(
+      `/pedidos/${encodeURIComponent(id)}/status`,
+      {
+        method: "PATCH",
+        body: JSON.stringify({ status })
+      }
+    );
+
+    mostrarMensagem("Status atualizado com sucesso.");
+    await carregarPedidos();
+  } catch (erro) {
+    mostrarMensagem(erro.message, true);
+    await carregarPedidos();
+  } finally {
+    if (select) select.disabled = false;
+  }
 }
 
 function linhaDetalhe(rotulo, valor) {
-    const linha = elemento("div", "detalhe-linha");
+  const linha = elemento("div", "detalhe-linha");
 
-    linha.append(
-        elemento("span", "", rotulo),
-        elemento("strong", "", valor ?? "—")
-    );
+  linha.append(
+    elemento("span", "", rotulo),
+    elemento("strong", "", valor ?? "—")
+  );
 
-    return linha;
+  return linha;
 }
 
 function secaoDetalhe(titulo) {
-    const secao = elemento("section");
-    secao.style.marginBottom = "22px";
-    secao.append(elemento("h3", "", titulo));
-    return secao;
+  const secao = elemento("section");
+
+  secao.style.marginBottom = "22px";
+  secao.append(elemento("h3", "", titulo));
+
+  return secao;
 }
 
 function adicionarItemPedido(item, destino) {
-    const bloco = elemento("div", "item-pedido");
+  const bloco = elemento("div", "item-pedido");
 
+  const quantidade = Number(item.quantidade || 1);
+  const precoUnitario = item.preco_unitario ?? item.preco;
+
+  const subtotal =
+    item.subtotal ??
+    (precoUnitario != null
+      ? quantidade * Number(precoUnitario)
+      : 0);
+
+  bloco.append(
+    elemento(
+      "strong",
+      "",
+      `${quantidade} × ${item.nome_produto || item.nome || "Produto"}`
+    ),
+    linhaDetalhe("Preço unitário", dinheiro(precoUnitario)),
+    linhaDetalhe("Subtotal", dinheiro(subtotal))
+  );
+
+  if (item.observacao) {
     bloco.append(
-        elemento(
-            "strong",
-            "",
-            `${item.quantidade || 1} × ${item.nome_produto || "Produto"}`
-        ),
-        linhaDetalhe("Preço unitário", dinheiro(item.preco_unitario)),
-        linhaDetalhe("Subtotal", dinheiro(item.subtotal))
+      elemento("p", "", `Observação: ${item.observacao}`)
     );
+  }
 
-    if (item.observacao) {
-        bloco.append(elemento("p", "", `Observação: ${item.observacao}`));
-    }
+  (item.opcoes || []).forEach(opcao => {
+    bloco.append(
+      elemento(
+        "p",
+        "",
+        `${opcao.nome_grupo || "Opção"}: ${
+          opcao.nome_opcao || ""
+        } (+ ${dinheiro(opcao.preco_adicional)})`
+      )
+    );
+  });
 
-    for (const opcao of item.opcoes || []) {
-        bloco.append(
-            elemento(
-                "p",
-                "",
-                `${opcao.nome_grupo || "Opção"}: ${opcao.nome_opcao || ""} (+ ${dinheiro(opcao.preco_adicional)})`
-            )
-        );
-    }
-
-    destino.append(bloco);
+  destino.append(bloco);
 }
 
 async function abrirDetalhes(id) {
-    $("#detalhe-titulo").textContent = `Pedido #${id}`;
+  const titulo = $("#detalhe-titulo");
+  const conteudo = $("#detalhe-conteudo");
 
-    const conteudo = $("#detalhe-conteudo");
-    conteudo.replaceChildren(elemento("p", "", "Carregando detalhes..."));
+  if (!conteudo) return;
 
+  if (titulo) titulo.textContent = `Pedido #${id}`;
+
+  conteudo.replaceChildren(
+    elemento("p", "", "Carregando detalhes...")
+  );
+
+  if (dialogDetalhes?.showModal && !dialogDetalhes.open) {
     dialogDetalhes.showModal();
+  }
 
-    try {
-        const dados = await requisicao(`/pedidos/${id}`);
-        const pedido = dados.pedido || dados;
+  try {
+    const dados = await requisicao(
+      `/pedidos/${encodeURIComponent(id)}`
+    );
 
-        conteudo.replaceChildren();
+    const pedido = dados.pedido || dados;
 
-        const resumo = secaoDetalhe("Informações do pedido");
+    if (titulo) {
+      titulo.textContent =
+        `Pedido #${pedido.numero || pedido.numero_pedido || id}`;
+    }
 
-        resumo.append(
-            linhaDetalhe("Cliente", pedido.nome_cliente),
-            linhaDetalhe("Telefone", pedido.telefone_cliente),
-            linhaDetalhe("Modalidade", pedido.modalidade),
-            linhaDetalhe(
-                "Status",
-                STATUS[String(pedido.status).toLowerCase()] || pedido.status
-            ),
-            linhaDetalhe("Subtotal", dinheiro(pedido.subtotal)),
-            linhaDetalhe("Entrega", dinheiro(pedido.taxa_entrega)),
-            linhaDetalhe("Desconto", dinheiro(pedido.desconto)),
-            linhaDetalhe("Total", dinheiro(pedido.total))
+    conteudo.replaceChildren();
+
+    const resumo = secaoDetalhe("Informações do pedido");
+
+    resumo.append(
+      linhaDetalhe("Cliente", pedido.nome_cliente),
+      linhaDetalhe(
+        "Telefone",
+        pedido.telefone_cliente || pedido.telefone
+      ),
+      linhaDetalhe("Modalidade", pedido.modalidade),
+      linhaDetalhe(
+        "Status",
+        STATUS[String(pedido.status || "").toLowerCase()] ||
+          pedido.status
+      ),
+      linhaDetalhe("Subtotal", dinheiro(pedido.subtotal)),
+      linhaDetalhe("Entrega", dinheiro(pedido.taxa_entrega)),
+      linhaDetalhe("Desconto", dinheiro(pedido.desconto)),
+      linhaDetalhe("Total", dinheiro(pedido.total))
+    );
+
+    conteudo.append(resumo);
+
+    const secaoItens = secaoDetalhe("Produtos");
+
+    if (Array.isArray(pedido.itens) && pedido.itens.length) {
+      pedido.itens.forEach(item => {
+        adicionarItemPedido(item, secaoItens);
+      });
+    } else {
+      secaoItens.append(
+        elemento("p", "", "Nenhum item retornado.")
+      );
+    }
+
+    conteudo.append(secaoItens);
+
+    if (
+      Array.isArray(pedido.pagamentos) &&
+      pedido.pagamentos.length
+    ) {
+      const secaoPagamentos = secaoDetalhe("Pagamento");
+
+      pedido.pagamentos.forEach(pagamento => {
+        const bloco = elemento("div", "item-pedido");
+
+        bloco.append(
+          linhaDetalhe("Forma", pagamento.forma),
+          linhaDetalhe("Valor", dinheiro(pagamento.valor)),
+          linhaDetalhe("Status", pagamento.status)
         );
 
-        conteudo.append(resumo);
-
-        const itens = secaoDetalhe("Produtos");
-
-        if (pedido.itens?.length) {
-            for (const item of pedido.itens) {
-                adicionarItemPedido(item, itens);
-            }
-        } else {
-            itens.append(elemento("p", "", "Nenhum item retornado."));
+        if (pagamento.troco_para != null) {
+          bloco.append(
+            linhaDetalhe(
+              "Troco para",
+              dinheiro(pagamento.troco_para)
+            )
+          );
         }
 
-        conteudo.append(itens);
+        secaoPagamentos.append(bloco);
+      });
 
-        if (pedido.pagamentos?.length) {
-            const pagamentos = secaoDetalhe("Pagamento");
-
-            for (const pagamento of pedido.pagamentos) {
-                pagamentos.append(
-                    linhaDetalhe("Forma", pagamento.forma),
-                    linhaDetalhe("Valor", dinheiro(pagamento.valor)),
-                    linhaDetalhe("Status", pagamento.status)
-                );
-
-                if (pagamento.troco_para) {
-                    pagamentos.append(
-                        linhaDetalhe("Troco para", dinheiro(pagamento.troco_para))
-                    );
-                }
-            }
-
-            conteudo.append(pagamentos);
-        }
-    } catch (erro) {
-        conteudo.replaceChildren(elemento("p", "mensagem", erro.message));
+      conteudo.append(secaoPagamentos);
     }
+  } catch (erro) {
+    conteudo.replaceChildren(
+      elemento("p", "mensagem", erro.message)
+    );
+  }
 }
 
 /* =========================
    CATEGORIAS
 ========================= */
 
+function normalizarCategoria(c) {
+  const ativo =
+    c.active ??
+    c.ativo ??
+    c.is_active ??
+    c.ativa;
+
+  return {
+    ...c,
+    id: c.id ?? c.id_categoria ?? c.category_id,
+    name: c.name ?? c.nome ?? c.nome_categoria ?? "",
+    description: c.description ?? c.descricao ?? "",
+    image_url: c.image_url ?? c.imagem_url ?? c.imagem ?? "",
+    order: c.order ?? c.ordem ?? c.ordem_exibicao,
+    active: boolValor(ativo, true)
+  };
+}
+
 async function carregarCategorias() {
-    const lista = $("#lista-categorias");
+  const lista = $("#lista-categorias");
+
+  if (lista) {
+    mostrarErroTabela(
+      "#lista-categorias",
+      "Carregando categorias...",
+      4
+    );
+  }
+
+  try {
+    const dados = await requisicao("/categorias");
+
+    categorias = arrayDaResposta(
+      dados,
+      ["categorias", "data", "items", "resultados"]
+    ).map(normalizarCategoria);
+
+    renderizarCategorias();
+    preencherSelectCategorias();
+
+    return true;
+  } catch (erro) {
+    categorias = [];
+    preencherSelectCategorias();
 
     if (lista) {
-        lista.replaceChildren();
-
-        const linha = elemento("tr");
-        const celula = elemento("td", "", "Carregando categorias...");
-        celula.colSpan = 4;
-        linha.append(celula);
-        lista.append(linha);
+      mostrarErroTabela(
+        "#lista-categorias",
+        erro.message,
+        4
+      );
     }
 
-    try {
-        const dados = await requisicao("/categorias");
+    mostrarMensagem(
+      `Não foi possível carregar as categorias: ${erro.message}`,
+      true
+    );
 
-        const listaRecebida = Array.isArray(dados)
-            ? dados
-            : (
-                dados.categorias ||
-                dados.data ||
-                dados.items ||
-                dados.resultados ||
-                dados.data?.categorias ||
-                []
-            );
-
-        categorias = Array.isArray(listaRecebida)
-            ? listaRecebida.map(normalizarCategoria)
-            : [];
-
-        renderizarCategorias();
-        preencherSelectCategorias();
-
-        return true;
-    } catch (erro) {
-        categorias = [];
-        
-
-
-        preencherSelectCategorias();
-
-        if (lista) {
-            lista.replaceChildren();
-
-            const linhaErro = elemento("tr");
-            const celulaErro = elemento("td", "", erro.message);
-            celulaErro.colSpan = 4;
-            linhaErro.append(celulaErro);
-            lista.append(linhaErro);
-        }
-
-        mostrarMensagem(
-            "Não foi possível carregar as categorias: " + erro.message,
-            true
-        );
-
-        return false;
-    }
-}
-
-/* =========================
-   CADASTRAR CATEGORIAS
-========================= */
-
-function abrirFormularioCategoria() {
-    const formulario = $("#form-categoria");
-    const card = $("#formulario-categoria-card");
-
-    if (!formulario || !card) return;
-
-    formulario.reset();
-
-    $("#categoria-ordem").value = "0";
-    $("#categoria-ativa").checked = true;
-    $("#mensagem-categoria").textContent = "";
-
-    card.hidden = false;
-
-    card.scrollIntoView({
-        behavior: "smooth",
-        block: "start"
-    });
-
-    $("#categoria-nome").focus();
-}
-
-function fecharFormularioCategoria() {
-    const formulario = $("#form-categoria");
-    const card = $("#formulario-categoria-card");
-
-    if (formulario) formulario.reset();
-    if (card) card.hidden = true;
-
-    const mensagem = $("#mensagem-categoria");
-
-    if (mensagem) {
-        mensagem.textContent = "";
-        mensagem.classList.remove("erro");
-    }
-}
-
-async function salvarCategoria(evento) {
-    evento.preventDefault();
-
-    const nome = $("#categoria-nome").value.trim();
-    const descricao = $("#categoria-descricao").value.trim();
-    const imagemUrl = $("#categoria-imagem").value.trim();
-    const ordemTexto = $("#categoria-ordem").value.trim();
-    const mensagem = $("#mensagem-categoria");
-    const botao = $("#btn-salvar-categoria");
-
-    if (!nome) {
-        mensagem.textContent = "Informe o nome da categoria.";
-        mensagem.classList.add("erro");
-        return;
-    }
-
-    const ordem = Number(ordemTexto);
-
-    if (
-        ordemTexto === "" ||
-        !Number.isInteger(ordem) ||
-        ordem < 0 ||
-        ordem > 65535
-    ) {
-        mensagem.textContent = "Informe uma ordem válida entre 0 e 65535.";
-        mensagem.classList.add("erro");
-        return;
-    }
-
-    const dadosCategoria = {
-        name: nome,
-        description: descricao,
-        image_url: imagemUrl,
-        order: ordem,
-        active: $("#categoria-ativa").checked
-    };
-
-    botao.disabled = true;
-    mensagem.classList.remove("erro");
-    mensagem.textContent = "Salvando categoria...";
-
-    try {
-        await requisicao("/categorias", {
-            method: "POST",
-            body: JSON.stringify(dadosCategoria)
-        });
-
-        mensagem.textContent = "Categoria cadastrada com sucesso!";
-
-        mostrarMensagem("Categoria cadastrada com sucesso.");
-
-        await carregarCategorias();
-
-        fecharFormularioCategoria();
-
-    } catch (erro) {
-        mensagem.textContent = erro.message;
-        mensagem.classList.add("erro");
-    } finally {
-        botao.disabled = false;
-    }
-}
-
-/* Eventos do formulário de categorias */
-
-$("#btn-nova-categoria")?.addEventListener(
-    "click",
-    abrirFormularioCategoria
-);
-
-$("#btn-cancelar-categoria")?.addEventListener(
-    "click",
-    fecharFormularioCategoria
-);
-
-$("#form-categoria")?.addEventListener(
-    "submit",
-    salvarCategoria
-);
-
-function normalizarCategoria(categoria) {
-    const valorAtivo =
-        categoria.active ??
-        categoria.ativo ??
-        categoria.is_active ??
-        categoria.ativa;
-
-    const ativa = valorAtivo === undefined || valorAtivo === null
-        ? true
-        : (
-            valorAtivo === true ||
-            valorAtivo === 1 ||
-            valorAtivo === "1" ||
-            String(valorAtivo).toLowerCase() === "true" ||
-            String(valorAtivo).toLowerCase() === "sim"
-        );
-
-    return {
-        ...categoria,
-        id: categoria.id ?? categoria.id_categoria ?? categoria.category_id,
-        name: categoria.name ?? categoria.nome ?? categoria.nome_categoria ?? "",
-        description: categoria.description ?? categoria.descricao ?? "",
-        order: categoria.order ?? categoria.ordem ?? categoria.ordem_exibicao,
-        active: ativa
-    };
+    return false;
+  }
 }
 
 function renderizarCategorias() {
-    const lista = $("#lista-categorias");
-    lista.replaceChildren();
+  const lista = $("#lista-categorias");
+  if (!lista) return;
 
-    if (!categorias.length) {
-        const linha = elemento("tr");
-        const celula = elemento("td", "", "Nenhuma categoria encontrada.");
-        celula.colSpan = 4;
-        linha.append(celula);
-        lista.append(linha);
-        return;
-    }
+  lista.replaceChildren();
 
-    for (const categoria of categorias) {
-        const linha = elemento("tr");
+  if (!categorias.length) {
+    mostrarErroTabela(
+      "#lista-categorias",
+      "Nenhuma categoria encontrada.",
+      4
+    );
+    return;
+  }
 
-        linha.append(
-            elemento("td", "", categoria.name || "—"),
-            elemento("td", "", categoria.description || "—"),
-            elemento("td", "", String(categoria.order ?? "—")),
-            elemento("td", "", categoria.active ? "Sim" : "Não")
-        );
+  categorias.forEach(categoria => {
+    const tr = elemento("tr");
 
-        lista.append(linha);
-    }
+    tr.append(
+      elemento("td", "", categoria.name || "—"),
+      elemento("td", "", categoria.description || "—"),
+      elemento("td", "", String(categoria.order ?? "—")),
+      elemento("td", "", categoria.active ? "Sim" : "Não")
+    );
+
+    lista.append(tr);
+  });
 }
 
-function preencherSelectCategorias() {
-    const select = $("#produto-categoria");
+// categoriaAtualId: mantém no select a categoria do produto em edição,
+// mesmo que ela esteja inativa
+function preencherSelectCategorias(categoriaAtualId = null) {
+  const select = $("#produto-categoria");
+  if (!select) return;
 
-    if (!select) return;
+  const atual = select.value;
+  select.replaceChildren();
 
-    const valorAtual = select.value;
+  const inicial = elemento(
+    "option",
+    "",
+    "Selecione uma categoria"
+  );
 
-    select.replaceChildren();
+  inicial.value = "";
+  select.append(inicial);
 
-    const inicial = elemento("option", "", "Selecione uma categoria");
-    inicial.value = "";
-    select.append(inicial);
+  categorias
+    .filter(c =>
+      c.id != null &&
+      String(c.name || "").trim() &&
+      (
+        c.active ||
+        (
+          categoriaAtualId != null &&
+          String(c.id) === String(categoriaAtualId)
+        )
+      )
+    )
+    .forEach(categoria => {
+      const nome = categoria.active
+        ? categoria.name
+        : `${categoria.name} (inativa)`;
 
-    for (const categoria of categorias) {
-        if (
-            !categoria.active ||
-            categoria.id === undefined ||
-            categoria.id === null
-        ) {
-            continue;
-        }
+      const opcao = elemento("option", "", nome);
+      opcao.value = String(categoria.id);
+      select.append(opcao);
+    });
 
-        const nome = String(categoria.name || "").trim();
-
-        if (!nome) continue;
-
-        const opcao = elemento("option", "", nome);
-        opcao.value = String(categoria.id);
-        select.append(opcao);
-    }
-
-    if ([...select.options].some((opcao) => opcao.value === valorAtual)) {
-        select.value = valorAtual;
-    }
+  if ([...select.options].some(opcao => opcao.value === atual)) {
+    select.value = atual;
+  }
 }
+
+function abrirFormularioCategoria() {
+  const form = $("#form-categoria");
+  const card = $("#formulario-categoria-card");
+
+  if (!form || !card) {
+    mostrarMensagem(
+      "Não foi encontrado o formulário de categorias.",
+      true
+    );
+    return;
+  }
+
+  form.reset();
+
+  if ($("#categoria-ordem")) {
+    $("#categoria-ordem").value = "0";
+  }
+
+  if ($("#categoria-ativa")) {
+    $("#categoria-ativa").checked = true;
+  }
+
+  mostrarMensagemElemento($("#mensagem-categoria"), "");
+
+  card.hidden = false;
+  card.scrollIntoView({
+    behavior: "smooth",
+    block: "start"
+  });
+
+  $("#categoria-nome")?.focus();
+}
+
+function fecharFormularioCategoria() {
+  $("#form-categoria")?.reset();
+
+  const card = $("#formulario-categoria-card");
+  if (card) card.hidden = true;
+
+  mostrarMensagemElemento($("#mensagem-categoria"), "");
+}
+
+async function salvarCategoria(evento) {
+  evento.preventDefault();
+
+  const nome = $("#categoria-nome")?.value.trim() || "";
+  const msg = $("#mensagem-categoria");
+  const botao = $("#btn-salvar-categoria");
+
+  if (!nome) {
+    mostrarMensagemElemento(
+      msg,
+      "Informe o nome da categoria.",
+      true
+    );
+    return;
+  }
+
+  const ordemTexto = $("#categoria-ordem")?.value.trim() ?? "0";
+  const ordem = Number(ordemTexto);
+
+  if (
+    ordemTexto === "" ||
+    !Number.isInteger(ordem) ||
+    ordem < 0 ||
+    ordem > 65535
+  ) {
+    mostrarMensagemElemento(
+      msg,
+      "Informe uma ordem válida entre 0 e 65535.",
+      true
+    );
+    return;
+  }
+
+  const dados = {
+    name: nome,
+    description: $("#categoria-descricao")?.value.trim() || "",
+    image_url: $("#categoria-imagem")?.value.trim() || "",
+    order: ordem,
+    active: $("#categoria-ativa")?.checked ?? true
+  };
+
+  if (botao) botao.disabled = true;
+
+  mostrarMensagemElemento(msg, "Salvando categoria...");
+
+  try {
+    await requisicao("/categorias", {
+      method: "POST",
+      body: JSON.stringify(dados)
+    });
+
+    await carregarCategorias();
+    fecharFormularioCategoria();
+    mostrarMensagem("Categoria cadastrada com sucesso.");
+  } catch (erro) {
+    mostrarMensagemElemento(msg, erro.message, true);
+  } finally {
+    if (botao) botao.disabled = false;
+  }
+}
+
+$("#btn-nova-categoria")?.addEventListener(
+  "click",
+  abrirFormularioCategoria
+);
+
+$("#btn-adicionar-categoria")?.addEventListener(
+  "click",
+  abrirFormularioCategoria
+);
+
+$("#btn-cancelar-categoria")?.addEventListener(
+  "click",
+  fecharFormularioCategoria
+);
+
+$("#form-categoria")?.addEventListener(
+  "submit",
+  salvarCategoria
+);
 
 /* =========================
    PRODUTOS
 ========================= */
 
+function normalizarProduto(p) {
+  return {
+    ...p,
+    id: p.id ?? p.id_produto,
+    name: p.name ?? p.nome ?? "",
+    description: p.description ?? p.descricao ?? "",
+    category_id: p.category_id ?? p.id_categoria,
+    category_name: p.category_name ?? p.nome_categoria ?? "",
+    price: p.price ?? p.preco ?? 0,
+    promo_price: p.promo_price ?? p.preco_promocional ?? null,
+    image_url: p.image_url ?? p.imagem_url ?? p.imagem ?? "",
+    prep_minutes: p.prep_minutes ?? p.tempo_preparo_min ?? null,
+    available: boolValor(p.available ?? p.disponivel, true),
+    active: boolValor(p.active ?? p.ativo, true),
+    featured: boolValor(p.featured ?? p.destaque, false)
+  };
+}
+
 async function carregarProdutos() {
-    const lista = $("#lista-produtos");
-    lista.replaceChildren();
+  if (!$("#lista-produtos")) return;
 
-    const linha = elemento("tr");
-    const celula = elemento("td", "", "Carregando produtos...");
-    celula.colSpan = 6;
-    linha.append(celula);
-    lista.append(linha);
+  mostrarErroTabela(
+    "#lista-produtos",
+    "Carregando produtos...",
+    6
+  );
 
-    mostrarMensagem("");
+  mostrarMensagem("");
 
-    try {
-        const dados = await requisicao("/produtos");
+  try {
+    const dados = await requisicao("/produtos");
 
-        produtos = Array.isArray(dados)
-            ? dados
-            : (dados.data || dados.produtos || []);
+    produtos = arrayDaResposta(
+      dados,
+      ["produtos", "data", "items"]
+    ).map(normalizarProduto);
 
-        renderizarProdutos();
-    } catch (erro) {
-        lista.replaceChildren();
-
-        const linhaErro = elemento("tr");
-        const celulaErro = elemento("td", "", erro.message);
-        celulaErro.colSpan = 6;
-        linhaErro.append(celulaErro);
-        lista.append(linhaErro);
-
-        mostrarMensagem("Não foi possível carregar os produtos.", true);
-    }
+    renderizarProdutos();
+  } catch (erro) {
+    mostrarErroTabela("#lista-produtos", erro.message, 6);
+    mostrarMensagem("Não foi possível carregar os produtos.", true);
+  }
 }
 
 function renderizarProdutos() {
-    const lista = $("#lista-produtos");
-    lista.replaceChildren();
+  const lista = $("#lista-produtos");
+  if (!lista) return;
 
-    if (!produtos.length) {
-        const linha = elemento("tr");
-        const celula = elemento("td", "", "Nenhum produto encontrado.");
-        celula.colSpan = 6;
-        linha.append(celula);
-        lista.append(linha);
-        return;
-    }
+  lista.replaceChildren();
 
-    for (const produto of produtos) {
-        const linha = elemento("tr");
+  if (!produtos.length) {
+    mostrarErroTabela(
+      "#lista-produtos",
+      "Nenhum produto encontrado.",
+      6
+    );
+    return;
+  }
 
-        const temPromocao =
-            produto.promo_price !== null &&
-            produto.promo_price !== undefined &&
-            produto.promo_price !== "";
+  produtos.forEach(produto => {
+    const tr = elemento("tr");
 
-        const precoExibido = temPromocao
-            ? `${dinheiro(produto.promo_price)} (Promoção)`
-            : dinheiro(produto.price);
+    const temPromocao =
+      produto.promo_price !== null &&
+      produto.promo_price !== undefined &&
+      produto.promo_price !== "" &&
+      Number(produto.promo_price) > 0;
 
-        linha.append(
-            elemento("td", "", produto.name || "—"),
-            elemento("td", "", produto.category_name || "—"),
-            elemento("td", "", precoExibido),
-            elemento("td", "", produto.available ? "Disponível" : "Indisponível"),
-            elemento("td", "", produto.active ? "Sim" : "Não")
-        );
+    tr.append(
+      elemento("td", "", produto.name || "—"),
+      elemento("td", "", produto.category_name || "—"),
+      elemento(
+        "td",
+        "",
+        temPromocao
+          ? `${dinheiro(produto.promo_price)} (Promoção)`
+          : dinheiro(produto.price)
+      ),
+      elemento(
+        "td",
+        "",
+        produto.available ? "Disponível" : "Indisponível"
+      ),
+      elemento("td", "", produto.active ? "Sim" : "Não")
+    );
 
-        const acoes = elemento("td");
+    const acoes = elemento("td");
 
-        const editar = elemento("button", "btn btn-light", "Editar");
-        editar.type = "button";
+    const editar = elemento("button", "btn btn-light", "Editar");
+    const duplicar = elemento("button", "btn btn-light", "Duplicar");
+    const status = elemento(
+      "button",
+      "btn btn-light",
+      produto.active ? "Desativar" : "Ativar"
+    );
 
-        editar.addEventListener("click", async () => {
-            const carregou = await carregarCategorias();
+    [editar, duplicar, status].forEach(botao => {
+      botao.type = "button";
+    });
 
-            if (!carregou) return;
+    editar.addEventListener("click", async () => {
+      if (await carregarCategorias()) {
+        abrirFormularioProduto(produto);
+      }
+    });
 
-            abrirFormularioProduto(produto);
-        });
+    duplicar.addEventListener("click", () => {
+      duplicarProduto(produto.id);
+    });
 
-        const duplicar = elemento("button", "btn btn-light", "Duplicar");
-        duplicar.type = "button";
-        duplicar.addEventListener("click", () => duplicarProduto(produto.id));
+    status.addEventListener("click", () => {
+      alterarAtivoProduto(produto);
+    });
 
-        const ativo = elemento(
-            "button",
-            "btn btn-light",
-            produto.active ? "Desativar" : "Ativar"
-        );
-
-        ativo.type = "button";
-        ativo.addEventListener("click", () => alterarAtivoProduto(produto));
-
-        acoes.append(editar, duplicar, ativo);
-        linha.append(acoes);
-        lista.append(linha);
-    }
+    acoes.append(editar, duplicar, status);
+    tr.append(acoes);
+    lista.append(tr);
+  });
 }
 
 function abrirFormularioProduto(produto = null) {
-    $("#formulario-produto-card").hidden = false;
-    $("#form-produto").reset();
+  const form = $("#form-produto");
+  const card = $("#formulario-produto-card");
 
-    $("#produto-id").value = produto?.id || "";
-    $("#titulo-form-produto").textContent = produto
-        ? "Editar produto"
-        : "Cadastrar produto";
+  if (!form || !card) {
+    mostrarMensagem(
+      "Não foi encontrado o formulário de produtos.",
+      true
+    );
+    return;
+  }
 
-    $("#produto-nome").value = produto?.name || "";
-    $("#produto-descricao").value = produto?.description || "";
-    $("#produto-preco").value = produto?.price ?? "";
+  form.reset();
+  card.hidden = false;
 
-    const campoPromocional = $("#produto-preco-promocional");
+  if ($("#produto-id")) {
+    $("#produto-id").value = produto?.id ?? "";
+  }
 
-    if (campoPromocional) {
-        campoPromocional.value = produto?.promo_price ?? "";
-    }
+  definirTexto(
+    "#titulo-form-produto",
+    produto ? "Editar produto" : "Cadastrar produto"
+  );
 
-    $("#produto-imagem").value = produto?.image_url || "";
-    $("#produto-preparo").value = produto?.prep_minutes ?? "";
+  const valores = {
+    "#produto-nome": produto?.name || "",
+    "#produto-descricao": produto?.description || "",
+    "#produto-preco": produto?.price ?? "",
+    "#produto-preco-promocional": produto?.promo_price ?? "",
+    "#produto-imagem": produto?.image_url || "",
+    "#produto-preparo": produto?.prep_minutes ?? ""
+  };
 
-    $("#produto-disponivel").checked = produto
-        ? Boolean(produto.available)
-        : true;
+  Object.entries(valores).forEach(([seletor, valor]) => {
+    const campo = $(seletor);
+    if (campo) campo.value = valor;
+  });
 
-    $("#produto-destaque").checked = Boolean(produto?.featured);
+  if ($("#produto-disponivel")) {
+    $("#produto-disponivel").checked =
+      produto ? produto.available : true;
+  }
 
-    preencherSelectCategorias();
+  if ($("#produto-destaque")) {
+    $("#produto-destaque").checked =
+      Boolean(produto?.featured);
+  }
 
-    $("#produto-categoria").value = produto?.category_id
+  preencherSelectCategorias(produto?.category_id ?? null);
+
+  if ($("#produto-categoria")) {
+    $("#produto-categoria").value =
+      produto?.category_id != null
         ? String(produto.category_id)
         : "";
+  }
 
-    $("#formulario-produto-card").scrollIntoView({
-        behavior: "smooth",
-        block: "start"
-    });
+  card.scrollIntoView({
+    behavior: "smooth",
+    block: "start"
+  });
 }
 
 function fecharFormularioProduto() {
-    $("#formulario-produto-card").hidden = true;
-    $("#form-produto").reset();
+  const card = $("#formulario-produto-card");
+  if (card) card.hidden = true;
+
+  $("#form-produto")?.reset();
+
+  if ($("#produto-id")) {
     $("#produto-id").value = "";
+  }
 }
 
-$("#btn-novo-produto").addEventListener("click", async () => {
-    const carregou = await carregarCategorias();
-
-    if (!carregou) return;
-
+$("#btn-novo-produto")?.addEventListener("click", async () => {
+  if (await carregarCategorias()) {
     abrirFormularioProduto();
+  }
 });
 
-$("#btn-cancelar-produto").addEventListener("click", fecharFormularioProduto);
+$("#btn-cancelar-produto")?.addEventListener(
+  "click",
+  fecharFormularioProduto
+);
 
-$("#form-produto").addEventListener("submit", async (evento) => {
+$("#form-produto")?.addEventListener(
+  "submit",
+  async evento => {
     evento.preventDefault();
 
-    const id = $("#produto-id").value;
-    const campoPromocional = $("#produto-preco-promocional");
+    const id = $("#produto-id")?.value || "";
+    const precoTexto = $("#produto-preco")?.value.trim() || "";
+    const promoTexto =
+      $("#produto-preco-promocional")?.value.trim() || "";
 
-    const valorPromocional = campoPromocional
-        ? campoPromocional.value.trim()
-        : "";
-
-    const precoNormal = Number($("#produto-preco").value);
-
-    const precoPromocional = valorPromocional === ""
-        ? null
-        : Number(valorPromocional);
+    const preco = numeroBR(precoTexto);
+    const promo = promoTexto === "" ? null : numeroBR(promoTexto);
 
     if (
-        precoPromocional !== null &&
-        (
-            !Number.isFinite(precoPromocional) ||
-            precoPromocional <= 0 ||
-            precoPromocional >= precoNormal
-        )
+      !precoTexto ||
+      !Number.isFinite(preco) ||
+      preco <= 0
     ) {
-        mostrarMensagem(
-            "O preço promocional deve ser maior que zero e menor que o preço normal.",
-            true
-        );
-        return;
+      mostrarMensagem(
+        "Informe um preço normal válido e maior que zero.",
+        true
+      );
+      return;
     }
 
-    const produto = {
-        name: $("#produto-nome").value.trim(),
-        description: $("#produto-descricao").value.trim(),
-        category_id: Number($("#produto-categoria").value),
-        price: precoNormal,
-        promo_price: precoPromocional,
-        image_url: $("#produto-imagem").value.trim(),
-        prep_minutes: $("#produto-preparo").value === ""
-            ? null
-            : Number($("#produto-preparo").value),
-        available: $("#produto-disponivel").checked,
-        featured: $("#produto-destaque").checked
+    if (
+      promo !== null &&
+      (!Number.isFinite(promo) || promo <= 0 || promo >= preco)
+    ) {
+      mostrarMensagem(
+        "O preço promocional deve ser maior que zero e menor que o preço normal.",
+        true
+      );
+      return;
+    }
+
+    const nome = $("#produto-nome")?.value.trim() || "";
+
+    if (!nome) {
+      mostrarMensagem("Informe o nome do produto.", true);
+      return;
+    }
+
+    const categoriaId = Number($("#produto-categoria")?.value);
+
+    if (!categoriaId) {
+      mostrarMensagem("Selecione uma categoria.", true);
+      return;
+    }
+
+    const preparoTexto = $("#produto-preparo")?.value.trim() || "";
+    const preparo = preparoTexto === "" ? null : Number(preparoTexto);
+
+    if (
+      preparo !== null &&
+      (!Number.isInteger(preparo) || preparo < 0)
+    ) {
+      mostrarMensagem(
+        "O tempo de preparo deve ser um número inteiro igual ou maior que zero.",
+        true
+      );
+      return;
+    }
+
+    const dados = {
+      name: nome,
+      description: $("#produto-descricao")?.value.trim() || "",
+      category_id: categoriaId,
+      price: preco,
+      promo_price: promo,
+      image_url: $("#produto-imagem")?.value.trim() || "",
+      prep_minutes: preparo,
+      available: $("#produto-disponivel")?.checked ?? true,
+      featured: $("#produto-destaque")?.checked ?? false
     };
 
-    if (!produto.category_id) {
-        mostrarMensagem("Selecione uma categoria para o produto.", true);
-        return;
-    }
-
-    const botaoSalvar = evento.submitter;
-
-    if (botaoSalvar) {
-        botaoSalvar.disabled = true;
-    }
+    const botao = evento.submitter;
+    if (botao) botao.disabled = true;
 
     try {
-        if (id) {
-            await requisicao(`/produtos/${id}`, {
-                method: "PATCH",
-                body: JSON.stringify(produto)
-            });
-
-            mostrarMensagem("Produto atualizado com sucesso.");
-        } else {
-            await requisicao("/produtos", {
-                method: "POST",
-                body: JSON.stringify(produto)
-            });
-
-            mostrarMensagem("Produto cadastrado com sucesso.");
+      await requisicao(
+        id
+          ? `/produtos/${encodeURIComponent(id)}`
+          : "/produtos",
+        {
+          method: id ? "PATCH" : "POST",
+          body: JSON.stringify(dados)
         }
+      );
 
-        fecharFormularioProduto();
-        await carregarProdutos();
+      fecharFormularioProduto();
+      await carregarProdutos();
+
+      mostrarMensagem(
+        id
+          ? "Produto atualizado com sucesso."
+          : "Produto cadastrado com sucesso."
+      );
     } catch (erro) {
-        mostrarMensagem(erro.message, true);
+      mostrarMensagem(erro.message, true);
     } finally {
-        if (botaoSalvar) {
-            botaoSalvar.disabled = false;
-        }
+      if (botao) botao.disabled = false;
     }
-});
+  }
+);
 
 async function duplicarProduto(id) {
-    if (!confirm("Deseja criar uma cópia deste produto?")) return;
+  if (!confirm("Deseja criar uma cópia deste produto?")) return;
 
-    try {
-        await requisicao(`/produtos/${id}/duplicar`, {
-            method: "POST",
-            body: "{}"
-        });
+  try {
+    await requisicao(
+      `/produtos/${encodeURIComponent(id)}/duplicar`,
+      {
+        method: "POST",
+        body: "{}"
+      }
+    );
 
-        mostrarMensagem("Produto duplicado com sucesso.");
-        await carregarProdutos();
-    } catch (erro) {
-        mostrarMensagem(erro.message, true);
-    }
+    await carregarProdutos();
+    mostrarMensagem("Produto duplicado com sucesso.");
+  } catch (erro) {
+    mostrarMensagem(erro.message, true);
+  }
 }
 
 async function alterarAtivoProduto(produto) {
-    const novoEstado = !produto.active;
-    const acao = novoEstado ? "ativar" : "desativar";
+  const novoAtivo = !produto.active;
 
-    if (!confirm(`Deseja ${acao} o produto "${produto.name}"?`)) return;
+  if (
+    !confirm(
+      `Deseja ${novoAtivo ? "ativar" : "desativar"} o produto "${produto.name}"?`
+    )
+  ) {
+    return;
+  }
 
-    try {
-        await requisicao(`/produtos/${produto.id}/ativo`, {
-            method: "PATCH",
-            body: JSON.stringify({ active: novoEstado })
-        });
+  try {
+    await requisicao(
+      `/produtos/${encodeURIComponent(produto.id)}/ativo`,
+      {
+        method: "PATCH",
+        body: JSON.stringify({ active: novoAtivo })
+      }
+    );
 
-        mostrarMensagem(
-            `Produto ${novoEstado ? "ativado" : "desativado"} com sucesso.`
-        );
+    await carregarProdutos();
 
-        await carregarProdutos();
-    } catch (erro) {
-        mostrarMensagem(erro.message, true);
-    }
+    mostrarMensagem(
+      `Produto ${novoAtivo ? "ativado" : "desativado"} com sucesso.`
+    );
+  } catch (erro) {
+    mostrarMensagem(erro.message, true);
+  }
 }
 
 /* =========================
@@ -979,443 +1293,677 @@ async function alterarAtivoProduto(produto) {
 ========================= */
 
 async function carregarCupons() {
-    const lista = $("#lista-cupons");
+  if (!$("#lista-cupons")) return;
 
-    if (!lista) {
-        mostrarMensagem("A tabela de cupons não foi encontrada.", true);
-        return;
-    }
+  mostrarErroTabela(
+    "#lista-cupons",
+    "Carregando cupons...",
+    7
+  );
 
-    lista.replaceChildren();
+  mostrarMensagem("");
 
-    const linha = elemento("tr");
-    const celula = elemento("td", "", "Carregando cupons...");
-    celula.colSpan = 7;
-    linha.append(celula);
-    lista.append(linha);
+  try {
+    const dados = await requisicao("/cupons");
 
-    mostrarMensagem("");
+    cupons = arrayDaResposta(
+      dados,
+      ["cupons", "data", "items"]
+    );
 
-    try {
-        const dados = await requisicao("/cupons");
-
-        cupons = Array.isArray(dados)
-            ? dados
-            : (dados.data || dados.cupons || []);
-
-        renderizarCupons();
-    } catch (erro) {
-        lista.replaceChildren();
-
-        const linhaErro = elemento("tr");
-        const celulaErro = elemento("td", "", erro.message);
-        celulaErro.colSpan = 7;
-        linhaErro.append(celulaErro);
-        lista.append(linhaErro);
-
-        mostrarMensagem("Não foi possível carregar os cupons.", true);
-    }
+    renderizarCupons();
+  } catch (erro) {
+    mostrarErroTabela("#lista-cupons", erro.message, 7);
+    mostrarMensagem("Não foi possível carregar os cupons.", true);
+  }
 }
 
 function formatarValorCupom(cupom) {
-    const valor = Number(cupom.valor || 0);
+  const valor = Number(cupom.valor || 0);
 
-    if (cupom.tipo === "percentual") {
-        return `${valor}%`;
-    }
-
-    return dinheiro(valor);
-}
-
-function formatarDataCupom(data) {
-    if (!data) return null;
-
-    const dataValida = new Date(data);
-
-    if (Number.isNaN(dataValida.getTime())) {
-        return "Data inválida";
-    }
-
-    return dataValida.toLocaleString("pt-BR");
+  return cupom.tipo === "percentual"
+    ? `${valor}%`
+    : dinheiro(valor);
 }
 
 function renderizarCupons() {
-    const lista = $("#lista-cupons");
-    if (!lista) return;
+  const lista = $("#lista-cupons");
+  if (!lista) return;
 
-    lista.replaceChildren();
+  lista.replaceChildren();
 
-    if (!cupons.length) {
-        const linha = elemento("tr");
-        const celula = elemento("td", "", "Nenhum cupom cadastrado.");
-        celula.colSpan = 7;
-        linha.append(celula);
-        lista.append(linha);
-        return;
-    }
+  if (!cupons.length) {
+    mostrarErroTabela(
+      "#lista-cupons",
+      "Nenhum cupom cadastrado.",
+      7
+    );
+    return;
+  }
 
-    for (const cupom of cupons) {
-        const linha = elemento("tr");
+  cupons.forEach(cupom => {
+    const tr = elemento("tr");
+    const usos = Number(cupom.utilizacoes || 0);
+    const limite = cupom.limite_total;
 
-        const utilizacoes = Number(cupom.utilizacoes || 0);
-        const limite = cupom.limite_total;
+    const uso =
+      limite != null && limite !== ""
+        ? `${usos} / ${limite}`
+        : String(usos);
 
-        const usoTexto = limite !== null && limite !== undefined && limite !== ""
-            ? `${utilizacoes} / ${limite}`
-            : String(utilizacoes);
+    const validade =
+      `${formatarDataCupom(cupom.inicio_em) || "Sem início"} até ` +
+      `${formatarDataCupom(cupom.fim_em) || "Sem vencimento"}`;
 
-        const inicio = formatarDataCupom(cupom.inicio_em);
-        const fim = formatarDataCupom(cupom.fim_em);
+    tr.append(
+      elemento("td", "", cupom.codigo || "—"),
+      elemento("td", "", formatarValorCupom(cupom)),
+      elemento("td", "", dinheiro(cupom.pedido_minimo)),
+      elemento("td", "", uso),
+      elemento("td", "", validade),
+      elemento(
+        "td",
+        "",
+        boolValor(cupom.ativo) ? "Ativo" : "Inativo"
+      )
+    );
 
-        const validade = `${inicio || "Sem início definido"} até ${fim || "Sem vencimento"}`;
+    const acoes = elemento("td");
 
-        linha.append(
-            elemento("td", "", cupom.codigo || "—"),
-            elemento("td", "", formatarValorCupom(cupom)),
-            elemento("td", "", dinheiro(cupom.pedido_minimo)),
-            elemento("td", "", usoTexto),
-            elemento("td", "", validade),
-            elemento("td", "", cupom.ativo ? "Ativo" : "Inativo")
-        );
+    const editar = elemento("button", "btn btn-light", "Editar");
+    const status = elemento(
+      "button",
+      "btn btn-light",
+      boolValor(cupom.ativo) ? "Desativar" : "Ativar"
+    );
 
-        const acoes = elemento("td");
+    editar.type = "button";
+    status.type = "button";
 
-        const botaoEditar = elemento("button", "btn btn-light", "Editar");
-        botaoEditar.type = "button";
-        botaoEditar.addEventListener("click", () => {
-            editarCupom(cupom.id);
-        });
+    editar.addEventListener("click", () => editarCupom(cupom.id));
+    status.addEventListener("click", () => alternarStatusCupom(cupom));
 
-        const botaoStatus = elemento(
-            "button",
-            "btn btn-light",
-            cupom.ativo ? "Desativar" : "Ativar"
-        );
-
-        botaoStatus.type = "button";
-        botaoStatus.addEventListener("click", () => {
-            alternarStatusCupom(cupom);
-        });
-
-        acoes.append(botaoEditar, botaoStatus);
-        linha.append(acoes);
-        lista.append(linha);
-    }
+    acoes.append(editar, status);
+    tr.append(acoes);
+    lista.append(tr);
+  });
 }
 
 function abrirFormularioCupom() {
-    const formulario = $("#form-cupom");
-    const card = $("#formulario-cupom-card");
+  const form = $("#form-cupom");
+  const card = $("#formulario-cupom-card");
 
-    if (!formulario || !card) return;
+  if (!form || !card) {
+    mostrarMensagem(
+      "Não foi encontrado o formulário de cupons.",
+      true
+    );
+    return;
+  }
 
-    formulario.reset();
+  form.reset();
 
-    $("#cupom-id").value = "";
-    $("#cupom-ativo").checked = true;
+  if ($("#cupom-id")) $("#cupom-id").value = "";
+  if ($("#cupom-ativo")) $("#cupom-ativo").checked = true;
 
-    card.hidden = false;
+  card.hidden = false;
+  atualizarLimiteValorCupom();
 
-    atualizarLimiteValorCupom();
-
-    card.scrollIntoView({
-        behavior: "smooth",
-        block: "start"
-    });
+  card.scrollIntoView({
+    behavior: "smooth",
+    block: "start"
+  });
 }
 
 function editarCupom(id) {
-    const cupom = cupons.find(
-        (item) => String(item.id) === String(id)
-    );
+  const cupom = cupons.find(
+    item => String(item.id) === String(id)
+  );
 
-    if (!cupom) return;
+  if (!cupom) return;
 
-    $("#cupom-id").value = cupom.id;
-    $("#cupom-codigo").value = cupom.codigo || "";
-    $("#cupom-tipo").value = cupom.tipo;
-    $("#cupom-valor").value = cupom.valor;
-    $("#cupom-pedido-minimo").value = cupom.pedido_minimo ?? 0;
+  const valores = {
+    "#cupom-id": cupom.id,
+    "#cupom-codigo": cupom.codigo || "",
+    "#cupom-tipo": cupom.tipo || "valor_fixo",
+    "#cupom-valor": cupom.valor ?? "",
+    "#cupom-pedido-minimo": cupom.pedido_minimo ?? 0,
+    "#cupom-inicio": valorParaInputDataHora(cupom.inicio_em),
+    "#cupom-fim": valorParaInputDataHora(cupom.fim_em),
+    "#cupom-limite-total": cupom.limite_total ?? "",
+    "#cupom-limite-cliente": cupom.limite_por_cliente ?? ""
+  };
 
-    $("#cupom-inicio").value = cupom.inicio_em
-        ? String(cupom.inicio_em).replace(" ", "T").slice(0, 16)
-        : "";
+  Object.entries(valores).forEach(([seletor, valor]) => {
+    const campo = $(seletor);
+    if (campo) campo.value = valor;
+  });
 
-    $("#cupom-fim").value = cupom.fim_em
-        ? String(cupom.fim_em).replace(" ", "T").slice(0, 16)
-        : "";
+  if ($("#cupom-ativo")) {
+    $("#cupom-ativo").checked = boolValor(cupom.ativo);
+  }
 
-    $("#cupom-limite-total").value = cupom.limite_total ?? "";
-    $("#cupom-limite-cliente").value =
-        cupom.limite_por_cliente ?? "";
+  const card = $("#formulario-cupom-card");
 
-    $("#cupom-ativo").checked = Boolean(cupom.ativo);
-    $("#formulario-cupom-card").hidden = false;
-
-    atualizarLimiteValorCupom();
-
-    $("#formulario-cupom-card").scrollIntoView({
-        behavior: "smooth",
-        block: "start"
+  if (card) {
+    card.hidden = false;
+    card.scrollIntoView({
+      behavior: "smooth",
+      block: "start"
     });
+  }
+
+  atualizarLimiteValorCupom();
 }
 
 function atualizarLimiteValorCupom() {
-    const tipo = $("#cupom-tipo");
-    const valor = $("#cupom-valor");
+  const tipo = $("#cupom-tipo");
+  const campoValor = $("#cupom-valor");
 
-    if (!tipo || !valor) return;
+  if (!tipo || !campoValor) return;
 
-    if (tipo.value === "percentual") {
-        valor.max = "100";
-    } else {
-        valor.removeAttribute("max");
-    }
+  if (tipo.value === "percentual") {
+    campoValor.max = "100";
+  } else {
+    campoValor.removeAttribute("max");
+  }
 }
 
 async function salvarCupom(evento) {
-    evento.preventDefault();
+  evento.preventDefault();
 
-    const id = $("#cupom-id").value;
+  const id = $("#cupom-id")?.value || "";
 
-    const dados = {
-        codigo: $("#cupom-codigo").value.trim().toUpperCase(),
-        tipo: $("#cupom-tipo").value,
-        valor: Number($("#cupom-valor").value),
-        pedido_minimo: Number($("#cupom-pedido-minimo").value || 0),
-        inicio_em: $("#cupom-inicio").value || null,
-        fim_em: $("#cupom-fim").value || null,
-        limite_total: $("#cupom-limite-total").value || null,
-        limite_por_cliente: $("#cupom-limite-cliente").value || null,
-        ativo: $("#cupom-ativo").checked
-    };
+  const dados = {
+    codigo: $("#cupom-codigo")?.value.trim().toUpperCase() || "",
+    tipo: $("#cupom-tipo")?.value || "valor_fixo",
+    valor: numeroBR($("#cupom-valor")?.value),
+    pedido_minimo: numeroBR($("#cupom-pedido-minimo")?.value || 0),
+    inicio_em: $("#cupom-inicio")?.value || null,
+    fim_em: $("#cupom-fim")?.value || null,
+    limite_total: $("#cupom-limite-total")?.value || null,
+    limite_por_cliente: $("#cupom-limite-cliente")?.value || null,
+    ativo: $("#cupom-ativo")?.checked ?? true
+  };
 
-    if (
-        dados.tipo === "percentual" &&
-        (dados.valor <= 0 || dados.valor > 100)
-    ) {
+  if (!dados.codigo) {
+    mostrarMensagem("Informe o código do cupom.", true);
+    return;
+  }
+
+  if (!Number.isFinite(dados.valor) || dados.valor <= 0) {
+    mostrarMensagem("Informe um valor de desconto válido.", true);
+    return;
+  }
+
+  if (
+    dados.tipo === "percentual" &&
+    dados.valor > 100
+  ) {
+    mostrarMensagem(
+      "O desconto percentual não pode ultrapassar 100%.",
+      true
+    );
+    return;
+  }
+
+  if (
+    !Number.isFinite(dados.pedido_minimo) ||
+    dados.pedido_minimo < 0
+  ) {
+    mostrarMensagem(
+      "O pedido mínimo não pode ser negativo.",
+      true
+    );
+    return;
+  }
+
+  if (
+    dados.inicio_em &&
+    dados.fim_em &&
+    new Date(dados.fim_em) < new Date(dados.inicio_em)
+  ) {
+    mostrarMensagem(
+      "A data final não pode ser anterior à data inicial.",
+      true
+    );
+    return;
+  }
+
+  for (const chave of ["limite_total", "limite_por_cliente"]) {
+    if (dados[chave] !== null) {
+      const numero = Number(dados[chave]);
+
+      if (!Number.isInteger(numero) || numero < 1) {
         mostrarMensagem(
-            "O desconto percentual deve estar entre 0 e 100.",
-            true
+          "Os limites devem ser números inteiros maiores que zero.",
+          true
         );
         return;
+      }
+
+      dados[chave] = numero;
+    }
+  }
+
+  const botao = evento.submitter;
+  if (botao) botao.disabled = true;
+
+  try {
+    await requisicao(
+      id
+        ? `/cupons/${encodeURIComponent(id)}`
+        : "/cupons",
+      {
+        method: id ? "PATCH" : "POST",
+        body: JSON.stringify(dados)
+      }
+    );
+
+    if ($("#formulario-cupom-card")) {
+      $("#formulario-cupom-card").hidden = true;
     }
 
-    if (dados.tipo === "valor_fixo" && dados.valor <= 0) {
-        mostrarMensagem("O valor do desconto deve ser maior que zero.", true);
-        return;
-    }
+    await carregarCupons();
 
-    if (dados.pedido_minimo < 0) {
-        mostrarMensagem("O pedido mínimo não pode ser negativo.", true);
-        return;
-    }
-
-    if (
-        dados.inicio_em &&
-        dados.fim_em &&
-        new Date(dados.fim_em) < new Date(dados.inicio_em)
-    ) {
-        mostrarMensagem(
-            "A data de término não pode ser anterior à data de início.",
-            true
-        );
-        return;
-    }
-
-    if (
-        dados.limite_total !== null &&
-        Number(dados.limite_total) < 1
-    ) {
-        mostrarMensagem("O limite total deve ser maior que zero.", true);
-        return;
-    }
-
-    if (
-        dados.limite_por_cliente !== null &&
-        Number(dados.limite_por_cliente) < 1
-    ) {
-        mostrarMensagem(
-            "O limite por cliente deve ser maior que zero.",
-            true
-        );
-        return;
-    }
-
-    const botaoSalvar = evento.submitter;
-
-    if (botaoSalvar) {
-        botaoSalvar.disabled = true;
-    }
-
-    try {
-        await requisicao(
-            id ? `/cupons/${id}` : "/cupons",
-            {
-                method: id ? "PATCH" : "POST",
-                body: JSON.stringify(dados)
-            }
-        );
-
-        mostrarMensagem(
-            id
-                ? "Cupom atualizado com sucesso."
-                : "Cupom cadastrado com sucesso."
-        );
-
-        $("#formulario-cupom-card").hidden = true;
-
-        await carregarCupons();
-    } catch (erro) {
-        mostrarMensagem(erro.message, true);
-    } finally {
-        if (botaoSalvar) {
-            botaoSalvar.disabled = false;
-        }
-    }
+    mostrarMensagem(
+      id
+        ? "Cupom atualizado com sucesso."
+        : "Cupom cadastrado com sucesso."
+    );
+  } catch (erro) {
+    mostrarMensagem(erro.message, true);
+  } finally {
+    if (botao) botao.disabled = false;
+  }
 }
 
 async function alternarStatusCupom(cupom) {
-    const acao = cupom.ativo ? "desativar" : "ativar";
+  const ativo = boolValor(cupom.ativo);
 
-    if (!confirm(`Deseja ${acao} o cupom "${cupom.codigo}"?`)) {
-        return;
-    }
+  if (
+    !confirm(
+      `Deseja ${ativo ? "desativar" : "ativar"} o cupom "${cupom.codigo}"?`
+    )
+  ) {
+    return;
+  }
 
-    try {
-        await requisicao(`/cupons/${cupom.id}/ativo`, {
-            method: "PATCH",
-            body: JSON.stringify({
-                ativo: !cupom.ativo
-            })
-        });
+  try {
+    await requisicao(
+      `/cupons/${encodeURIComponent(cupom.id)}/ativo`,
+      {
+        method: "PATCH",
+        body: JSON.stringify({ ativo: !ativo })
+      }
+    );
 
-        mostrarMensagem(
-            `Cupom ${cupom.ativo ? "desativado" : "ativado"} com sucesso.`
-        );
+    await carregarCupons();
 
-        await carregarCupons();
-    } catch (erro) {
-        mostrarMensagem(erro.message, true);
-    }
+    mostrarMensagem(
+      `Cupom ${ativo ? "desativado" : "ativado"} com sucesso.`
+    );
+  } catch (erro) {
+    mostrarMensagem(erro.message, true);
+  }
 }
-
-/* Eventos da tela de cupons */
 
 $("#form-cupom")?.addEventListener("submit", salvarCupom);
 
 $("#btn-novo-cupom")?.addEventListener(
-    "click",
-    abrirFormularioCupom
+  "click",
+  abrirFormularioCupom
 );
 
 $("#btn-cancelar-cupom")?.addEventListener("click", () => {
+  if ($("#formulario-cupom-card")) {
     $("#formulario-cupom-card").hidden = true;
+  }
 });
 
 $("#btn-atualizar-cupons")?.addEventListener(
-    "click",
-    carregarCupons
+  "click",
+  carregarCupons
 );
 
 $("#cupom-tipo")?.addEventListener(
-    "change",
-    atualizarLimiteValorCupom
+  "change",
+  atualizarLimiteValorCupom
 );
 
 /* =========================
-   CONFIGURAÇÕES DA LOJA
+   FATURAMENTO
+========================= */
+
+function configurarFiltroFaturamento() {
+  const filtro = $("#filtro-periodo-faturamento");
+  const campos = $("#campos-periodo-personalizado");
+
+  if (filtro && campos) {
+    campos.hidden = filtro.value !== "personalizado";
+  }
+}
+
+async function carregarFaturamento() {
+  const lista = $("#lista-faturamento");
+
+  if (!lista) {
+    mostrarMensagem(
+      "A seção de faturamento não existe no admin.html.",
+      true
+    );
+    return;
+  }
+
+  configurarFiltroFaturamento();
+  mostrarMensagem("");
+
+  const parametros = new URLSearchParams();
+  const periodo =
+    $("#filtro-periodo-faturamento")?.value || "hoje";
+
+  parametros.set("periodo", periodo);
+
+  if (periodo === "personalizado") {
+    const inicio =
+      $("#faturamento-data-inicial")?.value || "";
+
+    const fim =
+      $("#faturamento-data-final")?.value || "";
+
+    if (!inicio || !fim) {
+      mostrarErroTabela(
+        "#lista-faturamento",
+        "Selecione a data inicial e a data final.",
+        7
+      );
+
+      definirTexto(
+        "#mensagem-filtro-faturamento",
+        "Preencha as duas datas para consultar."
+      );
+
+      return;
+    }
+
+    if (fim < inicio) {
+      mostrarErroTabela(
+        "#lista-faturamento",
+        "A data final não pode ser anterior à inicial.",
+        7
+      );
+
+      definirTexto(
+        "#mensagem-filtro-faturamento",
+        "Confira o intervalo de datas."
+      );
+
+      return;
+    }
+
+    parametros.set("data_inicial", inicio);
+    parametros.set("data_final", fim);
+  }
+
+  mostrarErroTabela(
+    "#lista-faturamento",
+    "Carregando faturamento...",
+    7
+  );
+
+  definirTexto("#mensagem-filtro-faturamento", "");
+
+  try {
+    const resposta = await requisicao(
+      `/faturamento?${parametros.toString()}`
+    );
+
+    faturamento = resposta.faturamento || resposta;
+
+    definirTexto(
+      "#faturamento-total",
+      dinheiro(faturamento.total)
+    );
+
+    definirTexto(
+      "#faturamento-quantidade",
+      Number(faturamento.quantidade || 0).toLocaleString("pt-BR")
+    );
+
+    definirTexto(
+      "#faturamento-ticket-medio",
+      dinheiro(faturamento.ticket_medio)
+    );
+
+    definirTexto(
+      "#descricao-periodo-faturamento",
+      faturamento.periodo_descricao || ""
+    );
+
+    const registros = arrayDaResposta(
+      faturamento,
+      ["pagamentos", "registros", "itens"]
+    );
+
+    renderizarFaturamento(registros);
+  } catch (erro) {
+    mostrarErroTabela(
+      "#lista-faturamento",
+      erro.message,
+      7
+    );
+
+    definirTexto(
+      "#mensagem-filtro-faturamento",
+      erro.message
+    );
+
+    mostrarMensagem(
+      "Não foi possível carregar o faturamento.",
+      true
+    );
+  }
+}
+
+function renderizarFaturamento(registros) {
+  const lista = $("#lista-faturamento");
+  if (!lista) return;
+
+  lista.replaceChildren();
+
+  if (!Array.isArray(registros) || !registros.length) {
+    mostrarErroTabela(
+      "#lista-faturamento",
+      "Nenhum pagamento confirmado neste período.",
+      7
+    );
+    return;
+  }
+
+  registros.forEach(pagamento => {
+    const tr = elemento("tr");
+
+    const numero =
+      pagamento.numero_pedido ??
+      pagamento.pedido_id ??
+      "—";
+
+    const forma = String(
+      pagamento.forma ??
+      pagamento.forma_pagamento ??
+      "—"
+    ).replaceAll("_", " ");
+
+    tr.append(
+      elemento(
+        "td",
+        "",
+        numero === "—" ? "—" : `#${numero}`
+      ),
+      elemento(
+        "td",
+        "",
+        pagamento.nome_cliente || "Cliente"
+      ),
+      elemento("td", "", forma),
+      elemento("td", "", dinheiro(pagamento.valor)),
+      elemento("td", "", pagamento.status || "Pago"),
+      elemento(
+        "td",
+        "",
+        dataHoraBR(
+          pagamento.pago_em ?? pagamento.data_pagamento
+        )
+      ),
+      elemento(
+        "td",
+        "",
+        pagamento.pagamento_id ?? pagamento.id ?? "—"
+      )
+    );
+
+    lista.append(tr);
+  });
+}
+
+$("#filtro-periodo-faturamento")?.addEventListener(
+  "change",
+  configurarFiltroFaturamento
+);
+
+$("#btn-aplicar-filtro-faturamento")?.addEventListener(
+  "click",
+  carregarFaturamento
+);
+
+$("#btn-atualizar-faturamento")?.addEventListener(
+  "click",
+  carregarFaturamento
+);
+
+/* =========================
+   CONFIGURAÇÕES / ENTREGA
 ========================= */
 
 async function carregarConfiguracoes() {
-    const campo = $("#taxa-entrega");
-    const mensagem = $("#mensagem-taxa-entrega");
+  const campo = $("#taxa-entrega");
+  const msg = $("#mensagem-taxa-entrega");
 
-    if (!campo || !mensagem) return;
+  if (!campo || !msg) return;
 
-    mensagem.textContent = "Carregando configurações...";
+  mostrarMensagemElemento(
+    msg,
+    "Carregando configurações..."
+  );
 
-    try {
-        const dados = await requisicao("/configuracoes");
+  try {
+    const dados = await requisicao("/configuracoes");
 
-        if (dados.taxa_entrega_padrao === undefined) {
-            throw new Error("O servidor não retornou a taxa de entrega.");
-        }
-
-        campo.value = dados.taxa_entrega_padrao;
-        mensagem.textContent = "";
-    } catch (erro) {
-        mensagem.textContent =
-            "Não foi possível carregar a taxa: " + erro.message;
+    if (dados.taxa_entrega_padrao === undefined) {
+      throw new Error(
+        "O servidor não retornou a taxa de entrega."
+      );
     }
+
+    campo.value = dados.taxa_entrega_padrao;
+
+    mostrarMensagemElemento(msg, "");
+  } catch (erro) {
+    mostrarMensagemElemento(
+      msg,
+      `Não foi possível carregar a taxa: ${erro.message}`,
+      true
+    );
+  }
 }
 
-$("#form-taxa-entrega")?.addEventListener("submit", async (evento) => {
+$("#form-taxa-entrega")?.addEventListener(
+  "submit",
+  async evento => {
     evento.preventDefault();
 
     const campo = $("#taxa-entrega");
-    const mensagem = $("#mensagem-taxa-entrega");
+    const msg = $("#mensagem-taxa-entrega");
     const botao = $("#btn-salvar-taxa-entrega");
 
-    const valor = Number(campo.value);
+    if (!campo || !msg) return;
+
+    const texto = campo.value.trim();
+    const valor = numeroBR(texto);
 
     if (
-        campo.value.trim() === "" ||
-        !Number.isFinite(valor) ||
-        valor < 0 ||
-        valor > 99999999.99
+      texto === "" ||
+      !Number.isFinite(valor) ||
+      valor < 0 ||
+      valor > 99999999.99
     ) {
-        mensagem.textContent = "Informe um valor válido para a entrega.";
-        return;
+      mostrarMensagemElemento(
+        msg,
+        "Informe um valor válido para a entrega.",
+        true
+      );
+      return;
     }
 
-    botao.disabled = true;
-    mensagem.textContent = "Salvando taxa...";
+    if (botao) botao.disabled = true;
+
+    mostrarMensagemElemento(msg, "Salvando taxa...");
 
     try {
-        await requisicao("/configuracoes/taxa-entrega", {
-            method: "PATCH",
-            body: JSON.stringify({
-                taxa_entrega_padrao: valor
-            })
-        });
+      await requisicao("/configuracoes/taxa-entrega", {
+        method: "PATCH",
+        body: JSON.stringify({
+          taxa_entrega_padrao: valor
+        })
+      });
 
-        mensagem.textContent = "Taxa de entrega salva com sucesso!";
-        mostrarMensagem("Configuração da entrega atualizada.");
+      mostrarMensagemElemento(
+        msg,
+        "Taxa de entrega salva com sucesso!"
+      );
+
+      mostrarMensagem(
+        "Configuração da entrega atualizada."
+      );
     } catch (erro) {
-        mensagem.textContent = "Erro ao salvar: " + erro.message;
+      mostrarMensagemElemento(
+        msg,
+        `Erro ao salvar: ${erro.message}`,
+        true
+      );
     } finally {
-        botao.disabled = false;
+      if (botao) botao.disabled = false;
     }
-});
+  }
+);
 
 /* =========================
    BOTÕES GERAIS
 ========================= */
 
-botaoSair.addEventListener("click", async () => {
-    try {
-        await requisicao("/logout", {
-            method: "POST",
-            body: "{}"
-        });
-    } catch (erro) {
-        console.error("Erro ao sair:", erro);
-    }
+$("#btn-atualizar")?.addEventListener(
+  "click",
+  carregarPedidos
+);
 
-    mostrarLogin();
-});
+$("#btn-atualizar-produtos")?.addEventListener(
+  "click",
+  carregarProdutos
+);
 
-$("#btn-atualizar").addEventListener("click", carregarPedidos);
-$("#btn-atualizar-produtos").addEventListener("click", carregarProdutos);
-$("#btn-atualizar-categorias").addEventListener("click", carregarCategorias);
+$("#btn-atualizar-categorias")?.addEventListener(
+  "click",
+  carregarCategorias
+);
 
-$("#btn-fechar").addEventListener("click", () => {
+$("#btn-fechar")?.addEventListener("click", () => {
+  if (dialogDetalhes?.open) {
     dialogDetalhes.close();
+  }
 });
 
-$("#btn-imprimir").addEventListener("click", () => {
-    window.print();
+$("#btn-imprimir")?.addEventListener("click", () => {
+  window.print();
 });
 
 /* =========================

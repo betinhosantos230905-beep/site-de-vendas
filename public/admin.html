@@ -6,9 +6,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="theme-color" content="#e63a1e">
-
     <title>SALTY | Administração</title>
-
     <link rel="stylesheet" href="/css/admin.css">
     <script src="/js/admin.js" defer></script>
 </head>
@@ -17,7 +15,7 @@
     <header class="topbar">
         <a class="logo" href="/">SALTY</a>
         <span class="topbar-label">Painel administrativo</span>
-        <button id="btn-sair" class="btn btn-light" hidden>Sair</button>
+        <button id="btn-sair" class="btn btn-light" type="button" hidden>Sair</button>
     </header>
 
     <main class="container">
@@ -30,38 +28,27 @@
 
             <form id="form-login">
                 <label for="senha">Senha do administrador</label>
-                <input
-                    id="senha"
-                    name="senha"
-                    type="password"
-                    autocomplete="current-password"
-                    required
-                >
+                <input id="senha" name="senha" type="password"
+                    autocomplete="current-password" required>
                 <button class="btn btn-primary" type="submit">Entrar</button>
                 <p id="erro-login" class="mensagem" role="alert"></p>
             </form>
         </section>
 
-        <!-- PAINEL ADMINISTRATIVO -->
+        <!-- PAINEL -->
         <section id="tela-painel" hidden>
 
             <nav class="admin-nav" aria-label="Administração">
                 <button class="btn btn-primary aba-admin ativa"
                     data-aba="pedidos" type="button">Pedidos</button>
-
                 <button class="btn btn-light aba-admin"
                     data-aba="produtos" type="button">Produtos</button>
-
                 <button class="btn btn-light aba-admin"
                     data-aba="categorias" type="button">Categorias</button>
-
                 <button class="btn btn-light aba-admin"
                     data-aba="cupons" type="button">Cupons</button>
-
-                <!-- NOVA ABA -->
                 <button class="btn btn-light aba-admin"
                     data-aba="faturamento" type="button">Faturamento</button>
-
                 <button class="btn btn-light aba-admin"
                     data-aba="configuracoes" type="button">Configurações</button>
             </nav>
@@ -70,38 +57,98 @@
 
             <!-- PEDIDOS -->
             <section id="secao-pedidos" class="secao-admin">
+
                 <div class="page-heading">
                     <div>
-                        <span class="eyebrow">VISÃO GERAL</span>
+                        <span class="eyebrow">CENTRAL DE OPERAÇÕES</span>
                         <h1>Pedidos</h1>
-                        <p>Acompanhe os pedidos registrados na SALTY.</p>
+                        <p>Acompanhe e atualize os pedidos da SALTY.</p>
                     </div>
-
                     <button id="btn-atualizar" class="btn btn-light"
                         type="button">Atualizar pedidos</button>
                 </div>
 
+                <!-- RESUMO -->
                 <div class="resumo">
                     <article class="resumo-card">
-                        <span>Total de pedidos</span>
+                        <span>Total de pedidos listados</span>
                         <strong id="total-pedidos">0</strong>
                     </article>
-
                     <article class="resumo-card">
-                        <span>Pedidos em andamento</span>
+                        <span>Em andamento</span>
                         <strong id="pedidos-abertos">0</strong>
                     </article>
-
                     <article class="resumo-card">
                         <span>Valor dos pedidos listados</span>
                         <strong id="valor-pedidos">R$ 0,00</strong>
                     </article>
                 </div>
 
+                <!-- CONTADORES POR STATUS -->
+                <div class="resumo">
+                    <article class="resumo-card">
+                        <span>Recebidos</span>
+                        <strong id="pedidos-recebidos">0</strong>
+                    </article>
+                    <article class="resumo-card">
+                        <span>Em preparo</span>
+                        <strong id="pedidos-preparo">0</strong>
+                    </article>
+                    <article class="resumo-card">
+                        <span>Prontos ou em entrega</span>
+                        <strong id="pedidos-prontos">0</strong>
+                    </article>
+                    <article class="resumo-card">
+                        <span>Concluídos</span>
+                        <strong id="pedidos-concluidos">0</strong>
+                    </article>
+                </div>
+
+                <!-- PESQUISA E FILTROS -->
                 <section class="lista-card">
                     <div class="lista-heading">
-                        <h2>Pedidos recentes</h2>
-                        <span>Até 100 pedidos</span>
+                        <div>
+                            <h2>Localizar pedido</h2>
+                            <p>Pesquise pelo número ou pelo nome do cliente.</p>
+                        </div>
+                    </div>
+
+                    <div class="admin-form">
+                        <label for="busca-pedidos">Pesquisa</label>
+                        <input id="busca-pedidos" type="search"
+                            placeholder="Ex.: 125 ou nome do cliente"
+                            autocomplete="off">
+
+                        <label for="filtro-status-pedidos">Filtrar por status</label>
+                        <select id="filtro-status-pedidos">
+                            <option value="">Todos os status</option>
+                            <option value="recebido">Recebido</option>
+                            <option value="confirmado">Confirmado</option>
+                            <option value="em_preparo">Em preparo</option>
+                            <option value="pronto_retirada">Pronto para retirada</option>
+                            <option value="saiu_entrega">Saiu para entrega</option>
+                            <option value="entregue">Entregue</option>
+                            <option value="cancelado">Cancelado</option>
+                        </select>
+
+                        <div class="admin-actions">
+                            <button id="btn-limpar-filtros-pedidos"
+                                class="btn btn-light" type="button">
+                                Limpar filtros
+                            </button>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- TABELA DE PEDIDOS -->
+                <section class="lista-card">
+                    <div class="lista-heading">
+                        <div>
+                            <h2>Pedidos registrados</h2>
+                            <span id="quantidade-pedidos-filtrados">
+                                Até 100 pedidos
+                            </span>
+                        </div>
                     </div>
 
                     <div class="tabela-scroll">
@@ -134,7 +181,6 @@
                         <h1>Produtos</h1>
                         <p>Cadastre e atualize os produtos vendidos pela SALTY.</p>
                     </div>
-
                     <button id="btn-novo-produto" class="btn btn-primary"
                         type="button">Novo produto</button>
                 </div>
@@ -166,7 +212,7 @@
                             placeholder="Deixe vazio se não houver promoção">
 
                         <p class="mensagem">
-                            Opcional. O preço promocional deve ser menor que o preço normal.
+                            O preço promocional deve ser menor que o preço normal.
                         </p>
 
                         <label for="produto-imagem">URL da imagem</label>
@@ -199,17 +245,12 @@
                         <button id="btn-atualizar-produtos" class="btn btn-light"
                             type="button">Atualizar</button>
                     </div>
-
                     <div class="tabela-scroll">
                         <table>
                             <thead>
                                 <tr>
-                                    <th>Produto</th>
-                                    <th>Categoria</th>
-                                    <th>Preço</th>
-                                    <th>Disponibilidade</th>
-                                    <th>Ativo</th>
-                                    <th>Ações</th>
+                                    <th>Produto</th><th>Categoria</th><th>Preço</th>
+                                    <th>Disponibilidade</th><th>Ativo</th><th>Ações</th>
                                 </tr>
                             </thead>
                             <tbody id="lista-produtos">
@@ -226,16 +267,14 @@
                     <div>
                         <span class="eyebrow">CARDÁPIO</span>
                         <h1>Categorias</h1>
-                        <p>Cadastre e organize as categorias do cardápio da SALTY.</p>
+                        <p>Cadastre e organize as categorias da SALTY.</p>
                     </div>
-
                     <button id="btn-nova-categoria" class="btn btn-primary"
                         type="button">Nova categoria</button>
                 </div>
 
                 <section id="formulario-categoria-card" class="lista-card" hidden>
                     <h2>Cadastrar categoria</h2>
-
                     <form id="form-categoria" class="admin-form">
                         <label for="categoria-nome">Nome da categoria</label>
                         <input id="categoria-nome" type="text" maxlength="60"
@@ -264,7 +303,6 @@
                             <button id="btn-cancelar-categoria" class="btn btn-light"
                                 type="button">Cancelar</button>
                         </div>
-
                         <p id="mensagem-categoria" class="mensagem"
                             role="status" aria-live="polite"></p>
                     </form>
@@ -280,16 +318,10 @@
                                 type="button">Adicionar categoria</button>
                         </div>
                     </div>
-
                     <div class="tabela-scroll">
                         <table>
                             <thead>
-                                <tr>
-                                    <th>Nome</th>
-                                    <th>Descrição</th>
-                                    <th>Ordem</th>
-                                    <th>Ativa</th>
-                                </tr>
+                                <tr><th>Nome</th><th>Descrição</th><th>Ordem</th><th>Ativa</th></tr>
                             </thead>
                             <tbody id="lista-categorias">
                                 <tr><td colspan="4">Carregue as categorias.</td></tr>
@@ -305,16 +337,14 @@
                     <div>
                         <span class="eyebrow">PROMOÇÕES</span>
                         <h1>Cupons de desconto</h1>
-                        <p>Crie códigos promocionais para os clientes usarem nos pedidos da SALTY.</p>
+                        <p>Crie códigos promocionais para os clientes.</p>
                     </div>
-
                     <button id="btn-novo-cupom" class="btn btn-primary"
                         type="button">Novo cupom</button>
                 </div>
 
                 <section id="formulario-cupom-card" class="lista-card" hidden>
                     <h2 id="titulo-form-cupom">Cadastrar cupom</h2>
-
                     <form id="form-cupom" class="admin-form">
                         <input id="cupom-id" type="hidden">
 
@@ -369,18 +399,12 @@
                         <button id="btn-atualizar-cupons" class="btn btn-light"
                             type="button">Atualizar</button>
                     </div>
-
                     <div class="tabela-scroll">
                         <table>
                             <thead>
                                 <tr>
-                                    <th>Código</th>
-                                    <th>Desconto</th>
-                                    <th>Pedido mínimo</th>
-                                    <th>Utilizações</th>
-                                    <th>Validade</th>
-                                    <th>Ativo</th>
-                                    <th>Ações</th>
+                                    <th>Código</th><th>Desconto</th><th>Pedido mínimo</th>
+                                    <th>Utilizações</th><th>Validade</th><th>Ativo</th><th>Ações</th>
                                 </tr>
                             </thead>
                             <tbody id="lista-cupons">
@@ -391,28 +415,22 @@
                 </section>
             </section>
 
-            <!-- NOVA SEÇÃO: FATURAMENTO -->
+            <!-- FATURAMENTO -->
             <section id="secao-faturamento" class="secao-admin" hidden>
                 <div class="page-heading">
                     <div>
                         <span class="eyebrow">FINANCEIRO</span>
                         <h1>Faturamento</h1>
-                        <p>
-                            Consulte os pagamentos confirmados da SALTY
-                            por período.
-                        </p>
+                        <p>Consulte os pagamentos confirmados da SALTY por período.</p>
                     </div>
-
                     <button id="btn-atualizar-faturamento" class="btn btn-light"
                         type="button">Atualizar faturamento</button>
                 </div>
 
                 <section class="lista-card">
                     <h2>Filtrar período</h2>
-
                     <div class="admin-form">
                         <label for="filtro-periodo-faturamento">Período</label>
-
                         <select id="filtro-periodo-faturamento">
                             <option value="todo_periodo" selected>Todo o período</option>
                             <option value="hoje">Hoje</option>
@@ -428,16 +446,12 @@
                         <div id="campos-periodo-personalizado" hidden>
                             <label for="faturamento-data-inicial">Data inicial</label>
                             <input id="faturamento-data-inicial" type="date">
-
                             <label for="faturamento-data-final">Data final</label>
                             <input id="faturamento-data-final" type="date">
                         </div>
 
                         <button id="btn-aplicar-filtro-faturamento"
-                            class="btn btn-primary" type="button">
-                            Aplicar filtro
-                        </button>
-
+                            class="btn btn-primary" type="button">Aplicar filtro</button>
                         <p id="mensagem-filtro-faturamento" class="mensagem"
                             role="status" aria-live="polite"></p>
                     </div>
@@ -448,12 +462,10 @@
                         <span>Total recebido</span>
                         <strong id="faturamento-total">R$ 0,00</strong>
                     </article>
-
                     <article class="resumo-card">
                         <span>Pagamentos aprovados</span>
                         <strong id="faturamento-quantidade">0</strong>
                     </article>
-
                     <article class="resumo-card">
                         <span>Valor médio por pagamento</span>
                         <strong id="faturamento-ticket-medio">R$ 0,00</strong>
@@ -465,39 +477,29 @@
                         <h2>Pagamentos considerados</h2>
                         <span>Somente pagamentos pagos</span>
                     </div>
-
                     <div class="tabela-scroll">
                         <table>
                             <thead>
                                 <tr>
-                                    <th>Pagamento</th>
-                                    <th>Pedido</th>
-                                    <th>Data de aprovação</th>
-                                    <th>Forma</th>
-                                    <th>Valor</th>
-                                    <th>Status</th>
+                                    <th>Pagamento</th><th>Pedido</th>
+                                    <th>Data de aprovação</th><th>Forma</th>
+                                    <th>Valor</th><th>Status</th>
                                 </tr>
                             </thead>
-
                             <tbody id="lista-faturamento">
                                 <tr>
-                                    <td colspan="6">
-                                        Aguardando integração com o backend.
-                                    </td>
+                                    <td colspan="6">Aguardando integração com o backend.</td>
                                 </tr>
                             </tbody>
                         </table>
                     </div>
-
                     <p class="mensagem">
-                        O faturamento será calculado apenas com pagamentos
-                        aprovados. Pedidos pendentes, pagamentos recusados
-                        e estornados não devem entrar no total.
+                        O faturamento deve considerar apenas pagamentos aprovados.
                     </p>
                 </section>
             </section>
 
-            <!-- CONFIGURAÇÕES DA LOJA -->
+            <!-- CONFIGURAÇÕES -->
             <section id="secao-configuracoes" class="secao-admin" hidden>
                 <div class="page-heading">
                     <div>
@@ -519,14 +521,10 @@
 
                         <p class="mensagem">
                             O valor salvo será aplicado aos próximos pedidos.
-                            Pedidos já registrados não serão alterados.
                         </p>
 
                         <button id="btn-salvar-taxa-entrega"
-                            class="btn btn-primary" type="submit">
-                            Salvar taxa
-                        </button>
-
+                            class="btn btn-primary" type="submit">Salvar taxa</button>
                         <p id="mensagem-taxa-entrega" class="mensagem"
                             role="status" aria-live="polite"></p>
                     </form>
@@ -542,9 +540,7 @@
             <h2 id="detalhe-titulo">Detalhes do pedido</h2>
             <button id="btn-fechar" class="btn btn-light" type="button">Fechar</button>
         </div>
-
         <div id="detalhe-conteudo"></div>
-
         <div class="dialog-actions">
             <button id="btn-imprimir" class="btn btn-light" type="button">
                 Imprimir / Salvar PDF

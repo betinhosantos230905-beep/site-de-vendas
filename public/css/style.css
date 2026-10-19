@@ -1610,3 +1610,119 @@ textarea {
     flex-direction: column;
   }
 }
+
+
+/* =========================================
+   SALTY | CENTRAL DE PEDIDOS DO ADMIN
+   ========================================= */
+
+.admin-orders,
+#admin-orders,
+#pedidos-admin {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 16px;
+  color: var(--ink);
+}
+
+.admin-orders h1,
+.admin-orders h2,
+#admin-orders h1,
+#admin-orders h2,
+#pedidos-admin h1,
+#pedidos-admin h2 {
+  color: var(--ink);
+  line-height: 1.25;
+}
+
+.admin-orders button,
+#admin-orders button,
+#pedidos-admin button {
+  min-height: 42px;
+  padding: 9px 14px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--card);
+  color: var(--ink);
+  font-weight: 700;
+}
+
+.admin-orders button:hover,
+#admin-orders button:hover,
+#pedidos-admin button:hover {
+  border-color: var(--red);
+}
+
+.admin-orders input,
+.admin-orders select,
+#admin-orders input,
+#admin-orders select,
+#pedidos-admin input,
+#pedidos-admin select {
+  width: 100%;
+  min-height: 44px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--card);
+}
+
+.admin-orders .pedido,
+.admin-orders .pedido-card,
+#admin-orders .pedido,
+#admin-orders .pedido-card,
+#pedidos-admin .pedido,
+#pedidos-admin .pedido-card {
+  margin: 12px 0;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--card);
+  box-shadow: var(--shadow);
+  overflow-wrap: anywhere;
+}
+
+.admin-orders table,
+#admin-orders table,
+#pedidos-admin table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.admin-orders th,
+.admin-orders td,
+#admin-orders th,
+#admin-orders td,
+#pedidos-admin th,
+#pedidos-admin td {
+  padding: 12px;
+  border-bottom: 1px solid var(--line);
+  text-align: left;
+  vertical-align: top;
+}
+
+@media (max-width: 600px) {
+  .admin-orders,
+  #admin-orders,
+  #pedidos-admin {
+    padding: 10px;
+  }
+
+  .admin-orders .pedido,
+  .admin-orders .pedido-card,
+  #admin-orders .pedido,
+  #admin-orders .pedido-card,
+  #pedidos-admin .pedido,
+  #pedidos-admin .pedido-card {
+    padding: 12px;
+  }
+
+  .admin-orders table,
+  #admin-orders table,
+  #pedidos-admin table {
+    display: block;
+    overflow-x: auto;
+    white-space: nowrap;
+  }
+}

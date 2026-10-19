@@ -1,4 +1,5 @@
 ﻿
+
 const STATUS = {
     recebido: "Recebido",
     confirmado: "Confirmado",
@@ -64,6 +65,14 @@ async function requisicao(caminho, opcoes = {}) {
     const dados = await resposta.json().catch(() => ({}));
 
     if (!resposta.ok) {
+        // Sessão expirada: volta para a tela de login
+        if (
+            resposta.status === 401 &&
+            !["/login", "/sessao"].includes(caminho)
+        ) {
+            mostrarLogin();
+        }
+
         throw new Error(
             dados.error ||
             dados.erro ||
@@ -154,7 +163,7 @@ formLogin.addEventListener("submit", async (evento) => {
         erroLogin.textContent = "";
 
         mostrarPainel();
-        await carregarPedidos();
+        alternarAba("pedidos");
     } catch (erro) {
         erroLogin.textContent = erro.message;
     }
@@ -166,7 +175,7 @@ async function verificarSessao() {
 
         if (dados.autenticado) {
             mostrarPainel();
-            await carregarPedidos();
+            alternarAba("pedidos");
         } else {
             mostrarLogin();
         }
@@ -211,6 +220,34 @@ async function carregarPedidos() {
     }
 }
 
+function pedidosFiltrados() {
+    const busca = ($("#filtro-busca-pedido")?.value || "")
+        .trim()
+        .toLowerCase();
+
+    const status = $("#filtro-status-pedido")?.value || "";
+
+    return pedidos.filter((pedido) => {
+        if (
+            status &&
+            String(pedido.status || "").toLowerCase() !== status
+        ) {
+            return false;
+        }
+
+        if (!busca) return true;
+
+        const texto = [
+            pedido.numero,
+            pedido.id,
+            pedido.nome_cliente,
+            pedido.telefone_cliente
+        ].join(" ").toLowerCase();
+
+        return texto.includes(busca);
+    });
+}
+
 function renderizarPedidos() {
     listaPedidos.replaceChildren();
 
@@ -229,7 +266,9 @@ function renderizarPedidos() {
 
     $("#valor-pedidos").textContent = dinheiro(total);
 
-    if (!pedidos.length) {
+    const visiveis = pedidosFiltrados();
+
+    if (!visiveis.length) {
         const linha = elemento("tr");
         const celula = elemento("td", "", "Nenhum pedido encontrado.");
         celula.colSpan = 6;
@@ -238,7 +277,7 @@ function renderizarPedidos() {
         return;
     }
 
-    for (const pedido of pedidos) {
+    for (const pedido of visiveis) {
         const linha = elemento("tr");
         const numero = pedido.numero || pedido.id || "—";
 
@@ -359,7 +398,7 @@ async function abrirDetalhes(id) {
     const conteudo = $("#detalhe-conteudo");
     conteudo.replaceChildren(elemento("p", "", "Carregando detalhes..."));
 
-    dialogDetalhes.showModal();
+    if (!dialogDetalhes.open) dialogDetalhes.showModal();
 
     try {
         const dados = await requisicao(`/pedidos/${id}`);
@@ -401,17 +440,21 @@ async function abrirDetalhes(id) {
             const pagamentos = secaoDetalhe("Pagamento");
 
             for (const pagamento of pedido.pagamentos) {
-                pagamentos.append(
-                    linhaDetalhe("Forma", pagamento.forma),
+                const blocoPagamento = elemento("div", "item-pedido");
+
+                blocoPagamento.append(
+                    linhaDetalhe("Forma", formatarFormaPagamento(pagamento.forma)),
                     linhaDetalhe("Valor", dinheiro(pagamento.valor)),
                     linhaDetalhe("Status", pagamento.status)
                 );
 
                 if (pagamento.troco_para) {
-                    pagamentos.append(
+                    blocoPagamento.append(
                         linhaDetalhe("Troco para", dinheiro(pagamento.troco_para))
                     );
                 }
+
+                pagamentos.append(blocoPagamento);
             }
 
             conteudo.append(pagamentos);
@@ -1561,7 +1604,6 @@ function renderizarFaturamento(dados) {
     for (const pagamento of pagamentosFaturamento) {
         const linha = elemento("tr");
 
-        const idPagamento = pagamento.id ?? pagamento.id_pagamento ?? "—";
         const numeroPedido =
             pagamento.numero_pedido ??
             pagamento.numero ??
@@ -1579,11 +1621,11 @@ function renderizarFaturamento(dados) {
             : (pagamento.status || "—");
 
         linha.append(
-            elemento("td", "", String(idPagamento)),
             elemento("td", "", `#${numeroPedido}`),
-            elemento("td", "", dataPagamento),
+            elemento("td", "", pagamento.nome_cliente || "Cliente"),
             elemento("td", "", forma),
             elemento("td", "", valor),
+            elemento("td", "", dataPagamento),
             elemento("td", "", status)
         );
 
@@ -1640,6 +1682,9 @@ botaoSair.addEventListener("click", async () => {
 });
 
 $("#btn-atualizar")?.addEventListener("click", carregarPedidos);
+
+$("#filtro-busca-pedido")?.addEventListener("input", renderizarPedidos);
+$("#filtro-status-pedido")?.addEventListener("change", renderizarPedidos);
 $("#btn-atualizar-produtos")?.addEventListener("click", carregarProdutos);
 $("#btn-atualizar-categorias")?.addEventListener("click", carregarCategorias);
 
@@ -1657,3 +1702,4 @@ $("#btn-imprimir")?.addEventListener("click", () => {
 
 mostrarCamposPeriodoPersonalizado();
 verificarSessao();
+ 
