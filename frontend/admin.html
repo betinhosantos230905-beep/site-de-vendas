@@ -25,14 +25,19 @@
 
             <form id="form-login">
                 <label for="senha">Senha do administrador</label>
-                <input id="senha" name="senha" type="password"
-                       autocomplete="current-password" required>
+                <input
+                    id="senha"
+                    name="senha"
+                    type="password"
+                    autocomplete="current-password"
+                    required
+                >
                 <button class="btn btn-primary" type="submit">Entrar</button>
                 <p id="erro-login" class="mensagem" role="alert"></p>
             </form>
         </section>
 
-        <!-- PAINEL -->
+        <!-- PAINEL ADMINISTRATIVO -->
         <section id="tela-painel" hidden>
             <nav class="admin-nav" aria-label="Administração">
                 <button class="btn btn-primary aba-admin ativa" data-aba="pedidos" type="button">Pedidos</button>
@@ -81,8 +86,11 @@
                     <div class="filtros-admin">
                         <div>
                             <label for="filtro-busca-pedido">Buscar pedido ou cliente</label>
-                            <input id="filtro-busca-pedido" type="search"
-                                   placeholder="Número do pedido, nome ou telefone">
+                            <input
+                                id="filtro-busca-pedido"
+                                type="search"
+                                placeholder="Número do pedido, nome ou telefone"
+                            >
                         </div>
                         <div>
                             <label for="filtro-status-pedido">Filtrar por status</label>
@@ -103,8 +111,12 @@
                         <table>
                             <thead>
                                 <tr>
-                                    <th>Pedido</th><th>Cliente</th><th>Data</th>
-                                    <th>Total</th><th>Status</th><th>Ações</th>
+                                    <th>Pedido</th>
+                                    <th>Cliente</th>
+                                    <th>Data</th>
+                                    <th>Total</th>
+                                    <th>Status</th>
+                                    <th>Ações</th>
                                 </tr>
                             </thead>
                             <tbody id="lista-pedidos">
@@ -143,13 +155,17 @@
                         </select>
 
                         <label for="produto-preco">Preço normal (R$)</label>
-                        <input id="produto-preco" type="number" min="0.01"
-                               max="99999999.99" step="0.01" required>
+                        <input id="produto-preco" type="number" min="0.01" max="99999999.99" step="0.01" required>
 
                         <label for="produto-preco-promocional">Preço promocional (R$)</label>
-                        <input id="produto-preco-promocional" type="number"
-                               min="0.01" max="99999999.99" step="0.01"
-                               placeholder="Deixe vazio se não houver promoção">
+                        <input
+                            id="produto-preco-promocional"
+                            type="number"
+                            min="0.01"
+                            max="99999999.99"
+                            step="0.01"
+                            placeholder="Deixe vazio se não houver promoção"
+                        >
                         <p class="mensagem">O preço promocional deve ser menor que o preço normal.</p>
 
                         <label for="produto-imagem">URL da imagem</label>
@@ -182,7 +198,14 @@
                     <div class="tabela-scroll">
                         <table>
                             <thead>
-                                <tr><th>Produto</th><th>Categoria</th><th>Preço</th><th>Disponibilidade</th><th>Ativo</th><th>Ações</th></tr>
+                                <tr>
+                                    <th>Produto</th>
+                                    <th>Categoria</th>
+                                    <th>Preço</th>
+                                    <th>Disponibilidade</th>
+                                    <th>Ativo</th>
+                                    <th>Ações</th>
+                                </tr>
                             </thead>
                             <tbody id="lista-produtos">
                                 <tr><td colspan="6">Carregue os produtos.</td></tr>
@@ -207,20 +230,16 @@
                     <h2>Cadastrar categoria</h2>
                     <form id="form-categoria" class="admin-form">
                         <label for="categoria-nome">Nome da categoria</label>
-                        <input id="categoria-nome" type="text" maxlength="60"
-                               placeholder="Ex.: Hambúrgueres" required>
+                        <input id="categoria-nome" type="text" maxlength="60" placeholder="Ex.: Hambúrgueres" required>
 
                         <label for="categoria-descricao">Descrição</label>
-                        <textarea id="categoria-descricao" maxlength="200"
-                                  rows="3" placeholder="Descrição opcional"></textarea>
+                        <textarea id="categoria-descricao" maxlength="200" rows="3" placeholder="Descrição opcional"></textarea>
 
                         <label for="categoria-imagem">URL da imagem</label>
-                        <input id="categoria-imagem" type="url" maxlength="255"
-                               placeholder="https://...">
+                        <input id="categoria-imagem" type="url" maxlength="255" placeholder="https://...">
 
                         <label for="categoria-ordem">Ordem de exibição</label>
-                        <input id="categoria-ordem" type="number" min="0"
-                               max="65535" step="1" value="0" required>
+                        <input id="categoria-ordem" type="number" min="0" max="65535" step="1" value="0" required>
 
                         <label class="admin-check">
                             <input id="categoria-ativa" type="checkbox" checked>
@@ -243,7 +262,12 @@
                     <div class="tabela-scroll">
                         <table>
                             <thead>
-                                <tr><th>Nome</th><th>Descrição</th><th>Ordem</th><th>Ativa</th></tr>
+                                <tr>
+                                    <th>Nome</th>
+                                    <th>Descrição</th>
+                                    <th>Ordem</th>
+                                    <th>Ativa</th>
+                                </tr>
                             </thead>
                             <tbody id="lista-categorias">
                                 <tr><td colspan="4">Carregue as categorias.</td></tr>
@@ -270,8 +294,7 @@
                         <input id="cupom-id" type="hidden">
 
                         <label for="cupom-codigo">Código do cupom</label>
-                        <input id="cupom-codigo" type="text" maxlength="30"
-                               placeholder="EXEMPLO10" autocomplete="off" required>
+                        <input id="cupom-codigo" type="text" maxlength="30" placeholder="EXEMPLO10" autocomplete="off" required>
 
                         <label for="cupom-tipo">Tipo de desconto</label>
                         <select id="cupom-tipo" required>
@@ -280,12 +303,10 @@
                         </select>
 
                         <label for="cupom-valor">Valor do desconto</label>
-                        <input id="cupom-valor" type="number" min="0.01"
-                               step="0.01" placeholder="10" required>
+                        <input id="cupom-valor" type="number" min="0.01" step="0.01" placeholder="10" required>
 
                         <label for="cupom-pedido-minimo">Valor mínimo do pedido (R$)</label>
-                        <input id="cupom-pedido-minimo" type="number" min="0"
-                               step="0.01" value="0" required>
+                        <input id="cupom-pedido-minimo" type="number" min="0" step="0.01" value="0" required>
 
                         <label for="cupom-inicio">Início da promoção</label>
                         <input id="cupom-inicio" type="datetime-local">
@@ -294,12 +315,10 @@
                         <input id="cupom-fim" type="datetime-local">
 
                         <label for="cupom-limite-total">Limite total de utilizações</label>
-                        <input id="cupom-limite-total" type="number" min="1"
-                               step="1" placeholder="Deixe vazio para ilimitado">
+                        <input id="cupom-limite-total" type="number" min="1" step="1" placeholder="Deixe vazio para ilimitado">
 
                         <label for="cupom-limite-cliente">Limite por cliente</label>
-                        <input id="cupom-limite-cliente" type="number" min="1"
-                               step="1" placeholder="Deixe vazio para ilimitado">
+                        <input id="cupom-limite-cliente" type="number" min="1" step="1" placeholder="Deixe vazio para ilimitado">
 
                         <label class="admin-check">
                             <input id="cupom-ativo" type="checkbox" checked>
@@ -321,7 +340,15 @@
                     <div class="tabela-scroll">
                         <table>
                             <thead>
-                                <tr><th>Código</th><th>Desconto</th><th>Pedido mínimo</th><th>Utilizações</th><th>Validade</th><th>Ativo</th><th>Ações</th></tr>
+                                <tr>
+                                    <th>Código</th>
+                                    <th>Desconto</th>
+                                    <th>Pedido mínimo</th>
+                                    <th>Utilizações</th>
+                                    <th>Validade</th>
+                                    <th>Ativo</th>
+                                    <th>Ações</th>
+                                </tr>
                             </thead>
                             <tbody id="lista-cupons">
                                 <tr><td colspan="7">Os cupons serão carregados aqui.</td></tr>
@@ -371,17 +398,35 @@
                 </section>
 
                 <div class="resumo">
-                    <article class="resumo-card"><span>Total recebido</span><strong id="faturamento-total">R$ 0,00</strong></article>
-                    <article class="resumo-card"><span>Pagamentos</span><strong id="faturamento-quantidade">0</strong></article>
-                    <article class="resumo-card"><span>Ticket médio</span><strong id="faturamento-ticket-medio">R$ 0,00</strong></article>
+                    <article class="resumo-card">
+                        <span>Total recebido</span>
+                        <strong id="faturamento-total">R$ 0,00</strong>
+                    </article>
+                    <article class="resumo-card">
+                        <span>Pagamentos</span>
+                        <strong id="faturamento-quantidade">0</strong>
+                    </article>
+                    <article class="resumo-card">
+                        <span>Ticket médio</span>
+                        <strong id="faturamento-ticket-medio">R$ 0,00</strong>
+                    </article>
                 </div>
 
                 <section class="lista-card">
-                    <div class="lista-heading"><h2>Pagamentos confirmados</h2></div>
+                    <div class="lista-heading">
+                        <h2>Pagamentos confirmados</h2>
+                    </div>
                     <div class="tabela-scroll">
                         <table>
                             <thead>
-                                <tr><th>Pedido</th><th>Cliente</th><th>Forma</th><th>Valor pago</th><th>Data do pagamento</th><th>Status</th></tr>
+                                <tr>
+                                    <th>Pedido</th>
+                                    <th>Cliente</th>
+                                    <th>Forma</th>
+                                    <th>Valor pago</th>
+                                    <th>Data do pagamento</th>
+                                    <th>Status</th>
+                                </tr>
                             </thead>
                             <tbody id="lista-faturamento">
                                 <tr><td colspan="6">Selecione um período para consultar.</td></tr>
@@ -407,57 +452,75 @@
 
                     <form id="form-taxa-entrega" class="admin-form">
                         <label for="taxa-entrega">Valor da entrega (R$)</label>
-                        <input id="taxa-entrega" name="taxa-entrega" type="number"
-                               min="0" max="99999999.99" step="0.01" value="7.00" required>
+                        <input
+                            id="taxa-entrega"
+                            name="taxa-entrega"
+                            type="number"
+                            min="0"
+                            max="99999999.99"
+                            step="0.01"
+                            value="7.00"
+                            required
+                        >
                         <p class="mensagem">O valor salvo será aplicado aos próximos pedidos. Pedidos já registrados não serão alterados.</p>
                         <button id="btn-salvar-taxa-entrega" class="btn btn-primary" type="submit">Salvar taxa</button>
                         <p id="mensagem-taxa-entrega" class="mensagem" role="status" aria-live="polite"></p>
                     </form>
                 </section>
             </section>
+
+            <!-- CLIENTES: DENTRO DO PAINEL -->
+            <section id="secao-clientes" class="secao-admin" hidden>
+                <div class="page-heading">
+                    <div>
+                        <span class="eyebrow">CADASTROS</span>
+                        <h1>Gestão de clientes</h1>
+                        <p>Consulte os clientes que fizeram pedidos na SALTY.</p>
+                    </div>
+                    <button
+                        class="btn btn-primary"
+                        id="btn-atualizar-clientes"
+                        type="button"
+                    >
+                        Atualizar clientes
+                    </button>
+                </div>
+
+                <section class="lista-card">
+                    <div class="filtros-admin">
+                        <div>
+                            <label for="filtro-busca-cliente">Buscar cliente</label>
+                            <input
+                                type="search"
+                                id="filtro-busca-cliente"
+                                placeholder="Buscar por nome ou telefone..."
+                                aria-label="Buscar cliente por nome ou telefone"
+                            >
+                        </div>
+                    </div>
+
+                    <div class="tabela-scroll">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Cliente</th>
+                                    <th>Telefone</th>
+                                    <th>Pedidos</th>
+                                    <th>Total gasto</th>
+                                    <th>Última compra</th>
+                                </tr>
+                            </thead>
+                            <tbody id="lista-clientes">
+                                <tr>
+                                    <td colspan="5">Carregue os clientes.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+            </section>
         </section>
     </main>
-     
-<!-- CLIENTES -->
-<section id="secao-clientes" class="secao-admin" hidden>
-    <h2>Gestão de clientes</h2>
-
-    <div class="acoes-admin">
-        <input
-            type="search"
-            id="filtro-busca-cliente"
-            placeholder="Buscar por nome ou telefone..."
-            aria-label="Buscar cliente por nome ou telefone"
-        >
-
-        <button
-            class="btn btn-primary"
-            id="btn-atualizar-clientes"
-            type="button"
-        >
-            Atualizar clientes
-        </button>
-    </div>
-
-    <div class="tabela-responsiva">
-        <table>
-            <thead>
-                <tr>
-                    <th>Cliente</th>
-                    <th>Telefone</th>
-                    <th>Pedidos</th>
-                    <th>Total gasto</th>
-                    <th>Última compra</th>
-                </tr>
-            </thead>
-            <tbody id="lista-clientes">
-                <tr>
-                    <td colspan="5">Carregue os clientes.</td>
-                </tr>
-            </tbody>
-        </table>
-    </div>
-</section>
 
     <!-- DETALHES DO PEDIDO -->
     <dialog id="dialog-detalhes" class="dialog">
