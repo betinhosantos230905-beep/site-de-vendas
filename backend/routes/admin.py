@@ -1,6 +1,4 @@
 
-
-
 import hmac
 import os
 from functools import wraps
@@ -11,6 +9,13 @@ from decimal import Decimal, InvalidOperation
 from flask import Blueprint, jsonify, request, session
 
 from backend.database import get_connection
+from backend.routes.funcionamento import (
+    MODOS_LOJA,
+    obter_situacao,
+    salvar_dias,
+    salvar_modo,
+    validar_dias,
+)
 
 
 admin_bp = Blueprint("admin", __name__)
@@ -1768,3 +1773,404 @@ def atualizar_taxa_entrega_admin():
             conexao.close()
  
 
+
+# ==========================================
+# EXCLUIR PRODUTO
+# Só exclui se nunca foi vendido (preserva o histórico dos pedidos)
+# ==========================================
+
+@admin_bp.delete("/produtos/<int:produto_id>")
+@exigir_login_admin
+def excluir_produto_admin(produto_id):
+    conexao = None
+    cursor = None
+
+    try:
+        conexao = get_connection()
+        cursor = conexao.cursor(dictionary=True)
+
+        cursor.execute(
+            "SELECT id FROM produtos WHERE id = %s",
+            (produto_id,)
+        )
+
+        if not cursor.fetchone():
+            return jsonify({
+                "error": "Produto não encontrado."
+            }), 404
+
+        cursor.execute("""
+            SELECT COUNT(*) AS total
+            FROM itens_pedido
+            WHERE produto_id = %s
+        """, (produto_id,))
+
+        if int(cursor.fetchone()["total"]) > 0:
+            return jsonify({
+                "error": (
+                    "Este produto já foi vendido e não pode ser excluído, "
+                    "para preservar o histórico dos pedidos. "
+                    "Use o botão Desativar para tirá-lo do cardápio."
+                ),
+                "codigo": "produto_com_pedidos",
+            }), 409
+
+        cursor.execute(
+            "DELETE FROM produtos WHERE id = %s",
+            (produto_id,)
+        )
+
+        conexao.commit()
+
+        return jsonify({
+            "message": "Produto excluído com sucesso."
+        }), 200
+
+    except Exception as erro:
+        if conexao:
+            conexao.rollback()
+
+        if getattr(erro, "errno", None) == 1451:
+            return jsonify({
+                "error": (
+                    "Este produto está vinculado a outros registros e não "
+                    "pode ser excluído. Use o botão Desativar."
+                ),
+                "codigo": "produto_vinculado",
+            }), 409
+
+        return jsonify({
+            "error": "Não foi possível excluir o produto."
+        }), 500
+
+    finally:
+        if cursor:
+            cursor.close()
+
+        if conexao:
+            conexao.close()
+
+
+# ==========================================
+# DESTACAR PRODUTO
+# ==========================================
+
+@admin_bp.patch("/produtos/<int:produto_id>/destaque")
+@exigir_login_admin
+def alterar_destaque_produto_admin(produto_id):
+    dados = request.get_json(silent=True) or {}
+    destaque = dados.get("featured")
+
+    if not isinstance(destaque, bool):
+        return jsonify({
+            "error": "Informe featured como verdadeiro ou falso."
+        }), 400
+
+    conexao = None
+    cursor = None
+
+    try:
+        conexao = get_connection()
+        cursor = conexao.cursor()
+
+        cursor.execute("""
+            UPDATE produtos
+            SET destaque = %s
+            WHERE id = %s
+        """, (destaque, produto_id))
+
+        if cursor.rowcount == 0:
+            cursor.execute(
+                "SELECT id FROM produtos WHERE id = %s",
+                (produto_id,)
+            )
+
+            if not cursor.fetchone():
+                return jsonify({
+                    "error": "Produto não encontrado."
+                }), 404
+
+        conexao.commit()
+
+        return jsonify({
+            "message": (
+                "Produto destacado com sucesso."
+                if destaque
+                else "Destaque removido com sucesso."
+            )
+        }), 200
+
+    except Exception:
+        if conexao:
+            conexao.rollback()
+
+        return jsonify({
+            "error": "Não foi possível alterar o destaque."
+        }), 500
+
+    finally:
+        if cursor:
+            cursor.close()
+
+        if conexao:
+            conexao.close()
+
+
+# ==========================================
+# EXCLUIR CATEGORIA
+# Não exclui se houver produtos associados
+# ==========================================
+
+@admin_bp.delete("/categorias/<int:categoria_id>")
+@exigir_login_admin
+def excluir_categoria_admin(categoria_id):
+    conexao = None
+    cursor = None
+
+    try:
+        conexao = get_connection()
+        cursor = conexao.cursor(dictionary=True)
+
+        cursor.execute(
+            "SELECT id FROM categorias WHERE id = %s",
+            (categoria_id,)
+        )
+
+        if not cursor.fetchone():
+            return jsonify({
+                "error": "Categoria não encontrada."
+            }), 404
+
+        cursor.execute("""
+            SELECT COUNT(*) AS total
+            FROM produtos
+            WHERE categoria_id = %s
+        """, (categoria_id,))
+
+        total = int(cursor.fetchone()["total"])
+
+        if total > 0:
+            return jsonify({
+                "error": (
+                    f"Esta categoria possui {total} produto(s). "
+                    "Mova os produtos para outra categoria antes de excluir."
+                ),
+                "codigo": "categoria_com_produtos",
+            }), 409
+
+        cursor.execute(
+            "DELETE FROM categorias WHERE id = %s",
+            (categoria_id,)
+        )
+
+        conexao.commit()
+
+        return jsonify({
+            "message": "Categoria excluída com sucesso."
+        }), 200
+
+    except Exception as erro:
+        if conexao:
+            conexao.rollback()
+
+        if getattr(erro, "errno", None) == 1451:
+            return jsonify({
+                "error": (
+                    "Esta categoria está vinculada a outros registros "
+                    "e não pode ser excluída."
+                ),
+                "codigo": "categoria_vinculada",
+            }), 409
+
+        return jsonify({
+            "error": "Não foi possível excluir a categoria."
+        }), 500
+
+    finally:
+        if cursor:
+            cursor.close()
+
+        if conexao:
+            conexao.close()
+
+
+# ==========================================
+# ORDEM DAS CATEGORIAS
+# Recebe a lista completa de ids na nova ordem
+# ==========================================
+
+@admin_bp.put("/categorias/ordem")
+@exigir_login_admin
+def reordenar_categorias_admin():
+    dados = request.get_json(silent=True) or {}
+    ids = dados.get("ids")
+
+    if (
+        not isinstance(ids, list)
+        or not ids
+        or len(ids) > 5000
+        or any(
+            isinstance(i, bool) or not isinstance(i, int) or i <= 0
+            for i in ids
+        )
+        or len(set(ids)) != len(ids)
+    ):
+        return jsonify({
+            "error": "Informe a lista de categorias na nova ordem."
+        }), 400
+
+    conexao = None
+    cursor = None
+
+    try:
+        conexao = get_connection()
+        cursor = conexao.cursor(dictionary=True)
+
+        conexao.start_transaction()
+
+        cursor.execute("SELECT id FROM categorias FOR UPDATE")
+        existentes = {int(linha["id"]) for linha in cursor.fetchall()}
+
+        if set(ids) != existentes:
+            conexao.rollback()
+
+            return jsonify({
+                "error": (
+                    "A lista de categorias mudou. "
+                    "Atualize a página e tente novamente."
+                )
+            }), 409
+
+        for posicao, categoria_id in enumerate(ids, start=1):
+            cursor.execute(
+                "UPDATE categorias SET ordem = %s WHERE id = %s",
+                (posicao, categoria_id)
+            )
+
+        conexao.commit()
+
+        return jsonify({
+            "message": "Ordem das categorias salva com sucesso."
+        }), 200
+
+    except Exception:
+        if conexao:
+            conexao.rollback()
+
+        return jsonify({
+            "error": "Não foi possível salvar a ordem das categorias."
+        }), 500
+
+    finally:
+        if cursor:
+            cursor.close()
+
+        if conexao:
+            conexao.close()
+
+
+# ==========================================
+# FUNCIONAMENTO DA LOJA (horários + abrir/fechar manual)
+# ==========================================
+
+@admin_bp.get("/configuracoes/funcionamento")
+@exigir_login_admin
+def obter_funcionamento_admin():
+    conexao = None
+    cursor = None
+
+    try:
+        conexao = get_connection()
+        cursor = conexao.cursor(dictionary=True)
+
+        return jsonify(obter_situacao(cursor)), 200
+
+    except Exception:
+        return jsonify({
+            "error": "Não foi possível carregar o funcionamento da loja."
+        }), 500
+
+    finally:
+        if cursor:
+            cursor.close()
+
+        if conexao:
+            conexao.close()
+
+
+@admin_bp.put("/configuracoes/funcionamento")
+@exigir_login_admin
+def salvar_funcionamento_admin():
+    dados = request.get_json(silent=True) or {}
+    dias, erro = validar_dias(dados.get("dias"))
+
+    if erro:
+        return jsonify({
+            "error": erro
+        }), 400
+
+    conexao = None
+    cursor = None
+
+    try:
+        conexao = get_connection()
+        cursor = conexao.cursor(dictionary=True)
+
+        salvar_dias(cursor, dias)
+        conexao.commit()
+
+        return jsonify(obter_situacao(cursor)), 200
+
+    except Exception:
+        if conexao:
+            conexao.rollback()
+
+        return jsonify({
+            "error": "Não foi possível salvar os horários."
+        }), 500
+
+    finally:
+        if cursor:
+            cursor.close()
+
+        if conexao:
+            conexao.close()
+
+
+@admin_bp.patch("/configuracoes/loja-modo")
+@exigir_login_admin
+def alterar_modo_loja_admin():
+    dados = request.get_json(silent=True) or {}
+    modo = dados.get("modo")
+
+    if modo not in MODOS_LOJA:
+        return jsonify({
+            "error": "Modo inválido. Use automatico, aberta ou fechada."
+        }), 400
+
+    conexao = None
+    cursor = None
+
+    try:
+        conexao = get_connection()
+        cursor = conexao.cursor(dictionary=True)
+
+        salvar_modo(cursor, modo)
+        conexao.commit()
+
+        return jsonify(obter_situacao(cursor)), 200
+
+    except Exception:
+        if conexao:
+            conexao.rollback()
+
+        return jsonify({
+            "error": "Não foi possível alterar o estado da loja."
+        }), 500
+
+    finally:
+        if cursor:
+            cursor.close()
+
+        if conexao:
+            conexao.close()

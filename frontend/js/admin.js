@@ -1,6 +1,4 @@
-﻿
-
-const STATUS = {
+﻿const STATUS = {
     recebido: "Recebido",
     confirmado: "Confirmado",
     em_preparo: "Em preparo",
@@ -476,7 +474,7 @@ async function carregarCategorias() {
 
         const linha = elemento("tr");
         const celula = elemento("td", "", "Carregando categorias...");
-        celula.colSpan = 4;
+        celula.colSpan = 5;
         linha.append(celula);
         lista.append(linha);
     }
@@ -513,7 +511,7 @@ async function carregarCategorias() {
 
             const linhaErro = elemento("tr");
             const celulaErro = elemento("td", "", erro.message);
-            celulaErro.colSpan = 4;
+            celulaErro.colSpan = 5;
             linhaErro.append(celulaErro);
             lista.append(linhaErro);
         }
@@ -689,7 +687,7 @@ function renderizarCategorias() {
     if (!categorias.length) {
         const linha = elemento("tr");
         const celula = elemento("td", "", "Nenhuma categoria encontrada.");
-        celula.colSpan = 4;
+        celula.colSpan = 5;
         linha.append(celula);
         lista.append(linha);
         return;
@@ -697,6 +695,7 @@ function renderizarCategorias() {
 
     for (const categoria of categorias) {
         const linha = elemento("tr");
+        const indice = categorias.indexOf(categoria);
 
         linha.append(
             elemento("td", "", categoria.name || "—"),
@@ -705,7 +704,68 @@ function renderizarCategorias() {
             elemento("td", "", categoria.active ? "Sim" : "Não")
         );
 
+        const acoes = elemento("td");
+
+        const subir = elemento("button", "btn btn-light", "↑ Subir");
+        subir.type = "button";
+        subir.disabled = indice === 0;
+        subir.addEventListener("click", () => moverCategoria(indice, -1));
+
+        const descer = elemento("button", "btn btn-light", "↓ Descer");
+        descer.type = "button";
+        descer.disabled = indice === categorias.length - 1;
+        descer.addEventListener("click", () => moverCategoria(indice, 1));
+
+        const excluir = elemento("button", "btn btn-light btn-perigo", "Excluir");
+        excluir.type = "button";
+        excluir.addEventListener("click", () => excluirCategoria(categoria));
+
+        acoes.append(subir, descer, excluir);
+        linha.append(acoes);
         lista.append(linha);
+    }
+}
+
+async function moverCategoria(indice, deslocamento) {
+    const destino = indice + deslocamento;
+
+    if (destino < 0 || destino >= categorias.length) return;
+
+    const ids = categorias.map((categoria) => categoria.id);
+    [ids[indice], ids[destino]] = [ids[destino], ids[indice]];
+
+    try {
+        await requisicao("/categorias/ordem", {
+            method: "PUT",
+            body: JSON.stringify({ ids })
+        });
+
+        await carregarCategorias();
+        mostrarMensagem("Ordem das categorias salva.");
+    } catch (erro) {
+        await carregarCategorias();
+        mostrarMensagem(erro.message, true);
+    }
+}
+
+async function excluirCategoria(categoria) {
+    if (
+        !confirm(
+            `Excluir a categoria "${categoria.name}"?\n\n` +
+            "Categorias com produtos não podem ser excluídas. " +
+            "Mova os produtos para outra categoria antes."
+        )
+    ) {
+        return;
+    }
+
+    try {
+        await requisicao(`/categorias/${categoria.id}`, { method: "DELETE" });
+
+        await carregarCategorias();
+        mostrarMensagem("Categoria excluída com sucesso.");
+    } catch (erro) {
+        mostrarMensagem(erro.message, true);
     }
 }
 
@@ -757,7 +817,7 @@ async function carregarProdutos() {
 
     const linha = elemento("tr");
     const celula = elemento("td", "", "Carregando produtos...");
-    celula.colSpan = 6;
+    celula.colSpan = 7;
     linha.append(celula);
     lista.append(linha);
 
@@ -776,7 +836,7 @@ async function carregarProdutos() {
 
         const linhaErro = elemento("tr");
         const celulaErro = elemento("td", "", erro.message);
-        celulaErro.colSpan = 6;
+        celulaErro.colSpan = 7;
         linhaErro.append(celulaErro);
         lista.append(linhaErro);
 
@@ -793,7 +853,7 @@ function renderizarProdutos() {
     if (!produtos.length) {
         const linha = elemento("tr");
         const celula = elemento("td", "", "Nenhum produto encontrado.");
-        celula.colSpan = 6;
+        celula.colSpan = 7;
         linha.append(celula);
         lista.append(linha);
         return;
@@ -811,11 +871,20 @@ function renderizarProdutos() {
             ? `${dinheiro(produto.promo_price)} (Promoção)`
             : dinheiro(produto.price);
 
+        const celulaDestaque = elemento("td");
+
+        if (produto.featured) {
+            celulaDestaque.append(elemento("span", "badge-destaque", "Em destaque"));
+        } else {
+            celulaDestaque.textContent = "—";
+        }
+
         linha.append(
             elemento("td", "", produto.name || "—"),
             elemento("td", "", produto.category_name || "—"),
             elemento("td", "", precoExibido),
             elemento("td", "", produto.available ? "Disponível" : "Indisponível"),
+            celulaDestaque,
             elemento("td", "", produto.active ? "Sim" : "Não")
         );
 
@@ -845,7 +914,20 @@ function renderizarProdutos() {
         ativo.type = "button";
         ativo.addEventListener("click", () => alterarAtivoProduto(produto));
 
-        acoes.append(editar, duplicar, ativo);
+        const destaque = elemento(
+            "button",
+            "btn btn-light",
+            produto.featured ? "Remover destaque" : "Destacar"
+        );
+
+        destaque.type = "button";
+        destaque.addEventListener("click", () => alterarDestaqueProduto(produto));
+
+        const excluir = elemento("button", "btn btn-light btn-perigo", "Excluir");
+        excluir.type = "button";
+        excluir.addEventListener("click", () => excluirProduto(produto));
+
+        acoes.append(editar, duplicar, destaque, ativo, excluir);
         linha.append(acoes);
         lista.append(linha);
     }
@@ -1024,6 +1106,48 @@ async function alterarAtivoProduto(produto) {
         );
 
         await carregarProdutos();
+    } catch (erro) {
+        mostrarMensagem(erro.message, true);
+    }
+}
+
+async function alterarDestaqueProduto(produto) {
+    const novoEstado = !produto.featured;
+
+    try {
+        await requisicao(`/produtos/${produto.id}/destaque`, {
+            method: "PATCH",
+            body: JSON.stringify({ featured: novoEstado })
+        });
+
+        await carregarProdutos();
+
+        mostrarMensagem(
+            novoEstado
+                ? `"${produto.name}" agora está em destaque.`
+                : `"${produto.name}" saiu do destaque.`
+        );
+    } catch (erro) {
+        mostrarMensagem(erro.message, true);
+    }
+}
+
+async function excluirProduto(produto) {
+    if (
+        !confirm(
+            `Excluir o produto "${produto.name}"?\n\n` +
+            "Essa ação não pode ser desfeita. Produtos que já foram vendidos " +
+            "não podem ser excluídos (use Desativar)."
+        )
+    ) {
+        return;
+    }
+
+    try {
+        await requisicao(`/produtos/${produto.id}`, { method: "DELETE" });
+
+        await carregarProdutos();
+        mostrarMensagem("Produto excluído com sucesso.");
     } catch (erro) {
         mostrarMensagem(erro.message, true);
     }
@@ -1383,6 +1507,8 @@ $("#cupom-tipo")?.addEventListener(
 ========================= */
 
 async function carregarConfiguracoes() {
+    carregarFuncionamento();
+
     const campo = $("#taxa-entrega");
     const mensagem = $("#mensagem-taxa-entrega");
 
@@ -1443,6 +1569,220 @@ $("#form-taxa-entrega")?.addEventListener("submit", async (evento) => {
         botao.disabled = false;
     }
 });
+
+/* =========================
+   FUNCIONAMENTO DA LOJA
+========================= */
+
+const TEXTO_MODO_LOJA = {
+    automatico: "Modo automático: a loja abre e fecha conforme os horários cadastrados.",
+    aberta: "Aberta manualmente: recebe pedidos mesmo fora do horário.",
+    fechada: "Fechada manualmente: novos pedidos bloqueados, mesmo no horário normal."
+};
+
+function mostrarMensagemFuncionamento(texto, erro = false) {
+    const el = $("#mensagem-funcionamento");
+
+    if (!el) return;
+
+    el.textContent = texto || "";
+    el.classList.toggle("erro", erro);
+}
+
+function renderizarStatusLoja(dados) {
+    const badge = $("#loja-status-badge");
+
+    if (!badge) return;
+
+    badge.textContent = dados.aberta ? "Loja aberta" : "Loja fechada";
+    badge.classList.toggle("loja-aberta", Boolean(dados.aberta));
+    badge.classList.toggle("loja-fechada", !dados.aberta);
+
+    const detalhe = $("#loja-status-detalhe");
+
+    if (detalhe) {
+        detalhe.textContent =
+            (TEXTO_MODO_LOJA[dados.modo] || "") +
+            (dados.modo === "automatico" ? ` ${dados.mensagem || ""}` : "");
+    }
+
+    const botoes = {
+        aberta: "#btn-loja-abrir",
+        fechada: "#btn-loja-fechar",
+        automatico: "#btn-loja-automatico"
+    };
+
+    for (const [modo, seletor] of Object.entries(botoes)) {
+        const botao = $(seletor);
+
+        if (!botao) continue;
+
+        botao.classList.toggle("btn-primary", dados.modo === modo);
+        botao.classList.toggle("btn-light", dados.modo !== modo);
+    }
+}
+
+function criarCampoHora(valor, rotulo) {
+    const campo = document.createElement("input");
+
+    campo.type = "time";
+    campo.value = valor || "";
+    campo.setAttribute("aria-label", rotulo);
+
+    return campo;
+}
+
+function renderizarDiasFuncionamento(dias) {
+    const container = $("#funcionamento-dias");
+
+    if (!container) return;
+
+    container.replaceChildren();
+
+    for (const dia of dias) {
+        const linha = elemento("div", "dia-funcionamento");
+        linha.dataset.dia = String(dia.dia);
+
+        const rotulo = elemento("label", "dia-nome");
+        const marcador = document.createElement("input");
+
+        marcador.type = "checkbox";
+        marcador.className = "dia-aberto";
+        marcador.checked = Boolean(dia.aberto);
+
+        rotulo.append(marcador, document.createTextNode(dia.nome));
+
+        const periodos = elemento("div", "periodos-dia");
+        const campos = [];
+
+        for (let i = 0; i < 2; i++) {
+            const periodo = dia.periodos[i] || {};
+            const bloco = elemento("div", "periodo");
+
+            const abre = criarCampoHora(
+                periodo.abre,
+                `${dia.nome}: abertura do período ${i + 1}`
+            );
+
+            const fecha = criarCampoHora(
+                periodo.fecha,
+                `${dia.nome}: fechamento do período ${i + 1}`
+            );
+
+            bloco.append(
+                elemento("span", "", i === 0 ? "Das" : "e das"),
+                abre,
+                elemento("span", "", "às"),
+                fecha
+            );
+
+            periodos.append(bloco);
+            campos.push(abre, fecha);
+        }
+
+        const atualizar = () => {
+            campos.forEach((campo) => {
+                campo.disabled = !marcador.checked;
+            });
+        };
+
+        marcador.addEventListener("change", atualizar);
+        atualizar();
+
+        linha.append(rotulo, periodos);
+        container.append(linha);
+    }
+}
+
+function coletarDiasFuncionamento() {
+    return [...document.querySelectorAll(".dia-funcionamento")].map((linha) => {
+        const horas = [...linha.querySelectorAll("input[type=time]")]
+            .map((campo) => campo.value);
+
+        const periodos = [];
+
+        if (horas[0] || horas[1]) {
+            periodos.push({ abre: horas[0], fecha: horas[1] });
+        }
+
+        if (horas[2] || horas[3]) {
+            periodos.push({ abre: horas[2], fecha: horas[3] });
+        }
+
+        return {
+            dia: Number(linha.dataset.dia),
+            aberto: linha.querySelector(".dia-aberto").checked,
+            periodos
+        };
+    });
+}
+
+async function carregarFuncionamento() {
+    if (!$("#funcionamento-dias")) return;
+
+    try {
+        const dados = await requisicao("/configuracoes/funcionamento");
+
+        renderizarStatusLoja(dados);
+        renderizarDiasFuncionamento(dados.dias || []);
+        mostrarMensagemFuncionamento("");
+    } catch (erro) {
+        mostrarMensagemFuncionamento(
+            "Não foi possível carregar o funcionamento: " + erro.message,
+            true
+        );
+    }
+}
+
+async function salvarFuncionamento(evento) {
+    evento.preventDefault();
+
+    const botao = evento.submitter;
+    if (botao) botao.disabled = true;
+
+    mostrarMensagemFuncionamento("Salvando horários...");
+
+    try {
+        const dados = await requisicao("/configuracoes/funcionamento", {
+            method: "PUT",
+            body: JSON.stringify({ dias: coletarDiasFuncionamento() })
+        });
+
+        renderizarStatusLoja(dados);
+        renderizarDiasFuncionamento(dados.dias || []);
+        mostrarMensagemFuncionamento("Horários salvos com sucesso.");
+    } catch (erro) {
+        mostrarMensagemFuncionamento(erro.message, true);
+    } finally {
+        if (botao) botao.disabled = false;
+    }
+}
+
+async function definirModoLoja(modo) {
+    if (
+        modo === "fechada" &&
+        !confirm("Fechar a loja agora? Novos pedidos serão bloqueados.")
+    ) {
+        return;
+    }
+
+    try {
+        const dados = await requisicao("/configuracoes/loja-modo", {
+            method: "PATCH",
+            body: JSON.stringify({ modo })
+        });
+
+        renderizarStatusLoja(dados);
+        mostrarMensagemFuncionamento("Estado da loja atualizado.");
+    } catch (erro) {
+        mostrarMensagemFuncionamento(erro.message, true);
+    }
+}
+
+$("#form-funcionamento")?.addEventListener("submit", salvarFuncionamento);
+$("#btn-loja-abrir")?.addEventListener("click", () => definirModoLoja("aberta"));
+$("#btn-loja-fechar")?.addEventListener("click", () => definirModoLoja("fechada"));
+$("#btn-loja-automatico")?.addEventListener("click", () => definirModoLoja("automatico"));
 
 /* =========================
    FATURAMENTO
@@ -1702,4 +2042,3 @@ $("#btn-imprimir")?.addEventListener("click", () => {
 
 mostrarCamposPeriodoPersonalizado();
 verificarSessao();
- 
