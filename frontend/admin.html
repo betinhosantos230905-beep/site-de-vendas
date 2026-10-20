@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -40,6 +41,7 @@
                 <button class="btn btn-light aba-admin" data-aba="cupons" type="button">Cupons</button>
                 <button class="btn btn-light aba-admin" data-aba="faturamento" type="button">Faturamento</button>
                 <button class="btn btn-light aba-admin" data-aba="configuracoes" type="button">Configurações</button>
+                <button class="btn btn-light aba-admin" data-aba="clientes" type="button">Clientes</button>
             </nav>
 
             <p id="mensagem-painel" class="mensagem" role="status" aria-live="polite"></p>
@@ -180,10 +182,10 @@
                     <div class="tabela-scroll">
                         <table>
                             <thead>
-                                <tr><th>Produto</th><th>Categoria</th><th>Preço</th><th>Disponibilidade</th><th>Destaque</th><th>Ativo</th><th>Ações</th></tr>
+                                <tr><th>Produto</th><th>Categoria</th><th>Preço</th><th>Disponibilidade</th><th>Ativo</th><th>Ações</th></tr>
                             </thead>
                             <tbody id="lista-produtos">
-                                <tr><td colspan="7">Carregue os produtos.</td></tr>
+                                <tr><td colspan="6">Carregue os produtos.</td></tr>
                             </tbody>
                         </table>
                     </div>
@@ -241,10 +243,10 @@
                     <div class="tabela-scroll">
                         <table>
                             <thead>
-                                <tr><th>Nome</th><th>Descrição</th><th>Ordem</th><th>Ativa</th><th>Ações</th></tr>
+                                <tr><th>Nome</th><th>Descrição</th><th>Ordem</th><th>Ativa</th></tr>
                             </thead>
                             <tbody id="lista-categorias">
-                                <tr><td colspan="5">Carregue as categorias.</td></tr>
+                                <tr><td colspan="4">Carregue as categorias.</td></tr>
                             </tbody>
                         </table>
                     </div>
@@ -412,39 +414,50 @@
                         <p id="mensagem-taxa-entrega" class="mensagem" role="status" aria-live="polite"></p>
                     </form>
                 </section>
-
-                <section class="lista-card">
-                    <h2>Loja aberta ou fechada</h2>
-                    <p>Abra ou feche a loja manualmente, ou deixe seguir os horários abaixo.</p>
-
-                    <div class="loja-status">
-                        <span id="loja-status-badge" class="badge-loja">Carregando...</span>
-                    </div>
-                    <p id="loja-status-detalhe" class="mensagem" role="status"></p>
-
-                    <div class="acoes-loja">
-                        <button id="btn-loja-abrir" class="btn btn-light" type="button">Abrir loja</button>
-                        <button id="btn-loja-fechar" class="btn btn-light" type="button">Fechar loja</button>
-                        <button id="btn-loja-automatico" class="btn btn-light" type="button">Seguir os horários (automático)</button>
-                    </div>
-                </section>
-
-                <section class="lista-card">
-                    <h2>Funcionamento da loja</h2>
-                    <p>Horários no fuso America/Sao_Paulo. O segundo período é opcional (ex.: almoço e jantar). Desmarque o dia para deixá-lo fechado.</p>
-
-                    <form id="form-funcionamento" class="admin-form">
-                        <div id="funcionamento-dias"></div>
-
-                        <div class="admin-actions">
-                            <button class="btn btn-primary" type="submit">Salvar horários</button>
-                        </div>
-                        <p id="mensagem-funcionamento" class="mensagem" role="status" aria-live="polite"></p>
-                    </form>
-                </section>
             </section>
         </section>
     </main>
+     
+<!-- CLIENTES -->
+<section id="secao-clientes" class="secao-admin" hidden>
+    <h2>Gestão de clientes</h2>
+
+    <div class="acoes-admin">
+        <input
+            type="search"
+            id="filtro-busca-cliente"
+            placeholder="Buscar por nome ou telefone..."
+            aria-label="Buscar cliente por nome ou telefone"
+        >
+
+        <button
+            class="btn btn-primary"
+            id="btn-atualizar-clientes"
+            type="button"
+        >
+            Atualizar clientes
+        </button>
+    </div>
+
+    <div class="tabela-responsiva">
+        <table>
+            <thead>
+                <tr>
+                    <th>Cliente</th>
+                    <th>Telefone</th>
+                    <th>Pedidos</th>
+                    <th>Total gasto</th>
+                    <th>Última compra</th>
+                </tr>
+            </thead>
+            <tbody id="lista-clientes">
+                <tr>
+                    <td colspan="5">Carregue os clientes.</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</section>
 
     <!-- DETALHES DO PEDIDO -->
     <dialog id="dialog-detalhes" class="dialog">

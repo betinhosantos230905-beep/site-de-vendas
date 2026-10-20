@@ -2174,3 +2174,82 @@ def alterar_modo_loja_admin():
 
         if conexao:
             conexao.close()
+            
+    
+
+# ==========================================
+# GESTÃO DE CLIENTES
+# Lista clientes identificados pelos pedidos
+# ==========================================
+
+@admin_bp.get("/clientes")
+@exigir_login_admin
+def listar_clientes_admin():
+    conexao = None
+    cursor = None
+
+    try:
+        conexao = get_connection()
+        cursor = conexao.cursor(dictionary=True)
+
+        cursor.execute("""
+            SELECT
+                telefone_cliente,
+                MAX(nome_cliente) AS nome,
+                COUNT(*) AS total_pedidos,
+                SUM(
+                    CASE
+                        WHEN status != 'cancelado' THEN 1
+                        ELSE 0
+                    END
+                ) AS pedidos_validos,
+                SUM(
+                    CASE
+                        WHEN status != 'cancelado' THEN total
+                        ELSE 0
+                    END
+                ) AS total_gasto,
+                MAX(criado_em) AS ultima_compra
+            FROM pedidos
+            WHERE telefone_cliente IS NOT NULL
+              AND TRIM(telefone_cliente) != ''
+            GROUP BY telefone_cliente
+            ORDER BY MAX(criado_em) DESC
+        """)
+
+        clientes = cursor.fetchall()
+
+        for cliente in clientes:
+            cliente["total_pedidos"] = int(
+                cliente["total_pedidos"] or 0
+            )
+            cliente["pedidos_validos"] = int(
+                cliente["pedidos_validos"] or 0
+            )
+            cliente["total_gasto"] = float(
+                cliente["total_gasto"] or 0
+            )
+
+            if cliente["ultima_compra"]:
+                cliente["ultima_compra"] = (
+                    cliente["ultima_compra"].isoformat(
+                        sep=" ",
+                        timespec="seconds"
+                    )
+                )
+
+        return jsonify({
+            "clientes": clientes
+        }), 200
+
+    except Exception:
+        return jsonify({
+            "error": "Não foi possível carregar os clientes."
+        }), 500
+
+    finally:
+        if cursor:
+            cursor.close()
+
+        if conexao:
+            conexao.close()

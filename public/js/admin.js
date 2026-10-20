@@ -1,4 +1,5 @@
-﻿/* SALTY — Painel administrativo */
+﻿
+/* SALTY — Painel administrativo */
 "use strict";
 
 /* =========================
@@ -41,6 +42,7 @@ let pedidos = [];
 let produtos = [];
 let categorias = [];
 let cupons = [];
+let clientes = [];
 let faturamento = null;
 
 /* =========================
@@ -59,7 +61,6 @@ function dinheiro(valor) {
   );
 }
 
-// Aceita "12,50" e "12.50"
 function numeroBR(texto) {
   return Number(String(texto ?? "").trim().replace(",", "."));
 }
@@ -153,7 +154,6 @@ function formatarDataCupom(valor) {
     : data.toLocaleString("pt-BR");
 }
 
-// Converte data da API para o formato do input datetime-local
 function valorParaInputDataHora(valor) {
   if (!valor) return "";
 
@@ -206,7 +206,6 @@ async function requisicao(caminho, opcoes = {}) {
   }
 
   if (!resposta.ok) {
-    // Sessão expirada: volta para o login
     if (
       resposta.status === 401 &&
       !["/login", "/sessao"].includes(caminho)
@@ -263,7 +262,6 @@ if (formLogin) {
       mostrarMensagemElemento(erroLogin, "");
       mostrarPainel();
 
-      // alternarAba já carrega os pedidos
       alternarAba("pedidos");
     } catch (erro) {
       mostrarMensagemElemento(erroLogin, erro.message, true);
@@ -311,7 +309,8 @@ const SECOES = {
   categorias: "#secao-categorias",
   cupons: "#secao-cupons",
   faturamento: "#secao-faturamento",
-  configuracoes: "#secao-configuracoes"
+  configuracoes: "#secao-configuracoes",
+  clientes: "#secao-clientes"
 };
 
 const CARREGADORES = {
@@ -320,7 +319,8 @@ const CARREGADORES = {
   categorias: carregarCategorias,
   cupons: carregarCupons,
   faturamento: carregarFaturamento,
-  configuracoes: carregarConfiguracoes
+  configuracoes: carregarConfiguracoes,
+  clientes: carregarClientes
 };
 
 function alternarAba(nome) {
@@ -756,8 +756,6 @@ function renderizarCategorias() {
   });
 }
 
-// categoriaAtualId: mantém no select a categoria do produto em edição,
-// mesmo que ela esteja inativa
 function preencherSelectCategorias(categoriaAtualId = null) {
   const select = $("#produto-categoria");
   if (!select) return;
@@ -1935,6 +1933,134 @@ $("#form-taxa-entrega")?.addEventListener(
       if (botao) botao.disabled = false;
     }
   }
+);
+
+/* =========================
+   CLIENTES
+========================= */
+
+async function carregarClientes() {
+  const lista = $("#lista-clientes");
+
+  if (!lista) {
+    mostrarMensagem(
+      "A tabela de clientes não foi encontrada no admin.html.",
+      true
+    );
+    return;
+  }
+
+  mostrarErroTabela(
+    "#lista-clientes",
+    "Carregando clientes...",
+    5
+  );
+
+  mostrarMensagem("");
+
+  try {
+    const dados = await requisicao("/clientes");
+
+    clientes = arrayDaResposta(
+      dados,
+      ["clientes", "data", "items"]
+    );
+
+    renderizarClientes();
+  } catch (erro) {
+    clientes = [];
+
+    mostrarErroTabela(
+      "#lista-clientes",
+      erro.message,
+      5
+    );
+
+    mostrarMensagem(
+      "Não foi possível carregar os clientes.",
+      true
+    );
+  }
+}
+
+function renderizarClientes() {
+  const lista = $("#lista-clientes");
+  if (!lista) return;
+
+  lista.replaceChildren();
+
+  const filtro = (
+    $("#filtro-busca-cliente")?.value || ""
+  ).trim().toLocaleLowerCase("pt-BR");
+
+  const clientesFiltrados = clientes.filter(cliente => {
+    const nome = String(
+      cliente.nome || cliente.nome_cliente || ""
+    ).toLocaleLowerCase("pt-BR");
+
+    const telefone = String(
+      cliente.telefone_cliente || cliente.telefone || ""
+    ).toLocaleLowerCase("pt-BR");
+
+    return nome.includes(filtro) || telefone.includes(filtro);
+  });
+
+  if (!clientesFiltrados.length) {
+    mostrarErroTabela(
+      "#lista-clientes",
+      clientes.length
+        ? "Nenhum cliente corresponde à busca."
+        : "Nenhum cliente encontrado.",
+      5
+    );
+    return;
+  }
+
+  clientesFiltrados.forEach(cliente => {
+    const tr = elemento("tr");
+
+    const nome =
+      cliente.nome ||
+      cliente.nome_cliente ||
+      "Cliente";
+
+    const telefone =
+      cliente.telefone_cliente ||
+      cliente.telefone ||
+      "—";
+
+    const totalPedidos = Number(
+      cliente.total_pedidos || 0
+    );
+
+    const totalGasto = Number(
+      cliente.total_gasto || 0
+    );
+
+    const ultimaCompra = cliente.ultima_compra
+      ? dataHoraBR(cliente.ultima_compra)
+      : "—";
+
+    tr.append(
+      elemento("td", "", nome),
+      elemento("td", "", telefone),
+      elemento("td", "", totalPedidos.toLocaleString("pt-BR")),
+      elemento("td", "", dinheiro(totalGasto)),
+      elemento("td", "", ultimaCompra)
+    );
+
+    lista.append(tr);
+  });
+}
+
+$("#btn-atualizar-clientes")?.addEventListener(
+  "click",
+  carregarClientes
+);
+
+$("#filtro-busca-cliente")?.addEventListener(
+  "input",
+  renderizarClientes
 );
 
 /* =========================
