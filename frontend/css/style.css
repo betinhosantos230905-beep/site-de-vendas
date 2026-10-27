@@ -1613,23 +1613,23 @@ textarea {
 
 
 /* =========================================================
-   SALTY — AJUSTES DO CHECKOUT PARA CELULAR
+   SALTY — CHECKOUT RESPONSIVO PARA CELULAR
    ========================================================= */
 
 @media (max-width: 600px) {
   #checkout-dialog {
     position: fixed;
     inset: auto 0 0;
+    display: none;
     width: 100%;
-    max-width: none;
-    height: auto;
+    max-width: 100%;
     max-height: 94dvh;
     margin: 0;
     padding: 0;
+    box-sizing: border-box;
     overflow: hidden;
     border: 0;
-    border-radius: 22px 22px 0 0;
-    box-sizing: border-box;
+    border-radius: 20px 20px 0 0;
   }
 
   #checkout-dialog[open] {
@@ -1639,77 +1639,91 @@ textarea {
 
   #checkout-dialog .sheet-head {
     flex: 0 0 auto;
-    padding: 18px 16px 14px;
-  }
-
-  #checkout-dialog .sheet-head h3 {
-    font-size: 1.2rem;
-    line-height: 1.3;
+    padding: 18px 18px 14px;
   }
 
   #checkout-dialog .sheet-body {
     flex: 1 1 auto;
     min-height: 0;
-    padding: 4px 16px 20px;
+    padding: 8px 18px 20px;
+    box-sizing: border-box;
     overflow-x: hidden;
     overflow-y: auto;
-    overscroll-behavior: contain;
     -webkit-overflow-scrolling: touch;
   }
 
-  #checkout-dialog label.lbl {
+  #checkout-dialog .checkout-address {
+    width: 100%;
+    max-width: 100%;
     margin-top: 16px;
+    padding: 14px;
+    box-sizing: border-box;
+  }
+
+  #checkout-dialog label.lbl {
+    display: block;
+    width: 100%;
+    max-width: 100%;
+    margin-top: 14px;
     margin-bottom: 6px;
+    box-sizing: border-box;
   }
 
   #checkout-dialog input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
   #checkout-dialog select,
   #checkout-dialog textarea {
+    display: block;
     width: 100%;
+    min-width: 0;
     max-width: 100%;
     min-height: 48px;
     margin-top: 6px;
     padding: 12px;
-    font-size: 16px;
     box-sizing: border-box;
-  }
-
-  #checkout-dialog .checkout-address {
-    padding: 12px;
+    font-size: 16px;
   }
 
   #checkout-dialog fieldset.group {
-    padding: 10px 12px 12px;
-  }
-
-  #checkout-dialog .opt {
-    min-height: 44px;
-    align-items: center;
-    padding: 6px 0;
+    width: 100%;
+    max-width: 100%;
+    padding: 12px;
+    box-sizing: border-box;
   }
 
   #checkout-dialog .sheet-foot {
-    position: relative;
-    z-index: 2;
     display: flex;
     flex: 0 0 auto;
     gap: 10px;
-    padding: 12px 16px calc(12px + env(safe-area-inset-bottom, 0px));
+    padding: 12px 18px calc(12px + env(safe-area-inset-bottom, 0px));
+    box-sizing: border-box;
     background: #FFFFFF;
     border-top: 1px solid var(--line);
   }
 
   #checkout-dialog .sheet-foot .btn {
+    flex: 1 1 0;
     min-width: 0;
     min-height: 48px;
-    padding: 10px 12px;
+    padding: 10px;
+    box-sizing: border-box;
     font-size: 0.9rem;
-    line-height: 1.25;
+    line-height: 1.3;
+    white-space: normal;
     overflow-wrap: anywhere;
   }
 }
 
 @media (max-width: 360px) {
+  #checkout-dialog .sheet-head,
+  #checkout-dialog .sheet-body {
+    padding-right: 14px;
+    padding-left: 14px;
+  }
+
+  #checkout-dialog .checkout-address {
+    padding: 10px;
+  }
+
   #checkout-dialog .sheet-foot {
     gap: 8px;
     padding-right: 10px;
@@ -1717,8 +1731,8 @@ textarea {
   }
 
   #checkout-dialog .sheet-foot .btn {
-    padding-right: 8px;
-    padding-left: 8px;
+    padding-right: 6px;
+    padding-left: 6px;
     font-size: 0.82rem;
   }
 }
