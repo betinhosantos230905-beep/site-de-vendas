@@ -509,11 +509,29 @@ function productCard(p, cat) {
     disabled: !p.available,
     onclick: () => openProduct(p),
   },
+   
     h("div", {
-      class: "thumb",
+      class: `thumb${p.image_url ? " has-image" : ""}`,
       "aria-hidden": "true",
       style: `background:${cat.tone}`,
-    }, cat.emoji),
+    },
+      p.image_url
+        ? h("img", {
+            src: p.image_url,
+            alt: "",
+            loading: "lazy",
+            onerror: (evento) => {
+              const imagem = evento.currentTarget;
+              imagem.remove();
+              imagem.parentElement?.classList.remove("has-image");
+              if (imagem.parentElement) {
+                imagem.parentElement.textContent = cat.emoji;
+              }
+            },
+          })
+        : cat.emoji
+    ),
+
 
     h("div", { class: "card-body" },
       h("span", { class: "card-name" }, p.name),
