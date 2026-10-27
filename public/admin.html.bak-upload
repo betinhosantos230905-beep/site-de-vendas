@@ -1,0 +1,570 @@
+﻿
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#e63a1e">
+    <title>SALTY | AdministraÃ§Ã£o</title>
+    <link rel="stylesheet" href="/css/admin.css">
+    <script src="/js/admin.js" defer></script>
+</head>
+<body>
+    <header class="topbar">
+        <a class="logo" href="/">SALTY</a>
+        <span class="topbar-label">Painel administrativo</span>
+        <button id="btn-sair" class="btn btn-light" type="button" hidden>Sair</button>
+    </header>
+
+    <main class="container">
+        <!-- LOGIN -->
+        <section id="tela-login" class="login-card">
+            <span class="eyebrow">ÃREA RESTRITA</span>
+            <h1>Entrar na administraÃ§Ã£o</h1>
+            <p>Acesse para gerenciar a SALTY.</p>
+
+            <form id="form-login">
+                <label for="senha">Senha do administrador</label>
+                <input
+                    id="senha"
+                    name="senha"
+                    type="password"
+                    autocomplete="current-password"
+                    required
+                >
+                <button class="btn btn-primary" type="submit">Entrar</button>
+                <p id="erro-login" class="mensagem" role="alert"></p>
+            </form>
+        </section>
+
+        <!-- PAINEL ADMINISTRATIVO -->
+        <section id="tela-painel" hidden>
+            <nav class="admin-nav" aria-label="AdministraÃ§Ã£o">
+                <button class="btn btn-primary aba-admin ativa" data-aba="pedidos" type="button">Pedidos</button>
+                <button class="btn btn-light aba-admin" data-aba="produtos" type="button">Produtos</button>
+                <button class="btn btn-light aba-admin" data-aba="categorias" type="button">Categorias</button>
+                <button class="btn btn-light aba-admin" data-aba="cupons" type="button">Cupons</button>
+                <button class="btn btn-light aba-admin" data-aba="faturamento" type="button">Faturamento</button>
+                <button class="btn btn-light aba-admin" data-aba="configuracoes" type="button">ConfiguraÃ§Ãµes</button>
+                <button class="btn btn-light aba-admin" data-aba="clientes" type="button">Clientes</button>
+            </nav>
+
+            <p id="mensagem-painel" class="mensagem" role="status" aria-live="polite"></p>
+
+            <!-- PEDIDOS -->
+            <section id="secao-pedidos" class="secao-admin">
+                <div class="page-heading">
+                    <div>
+                        <span class="eyebrow">VISÃƒO GERAL</span>
+                        <h1>Pedidos</h1>
+                        <p>Acompanhe os pedidos registrados na SALTY.</p>
+                    </div>
+                    <button id="btn-atualizar" class="btn btn-light" type="button">Atualizar pedidos</button>
+                </div>
+
+                <div class="resumo">
+                    <article class="resumo-card">
+                        <span>Total de pedidos</span>
+                        <strong id="total-pedidos">0</strong>
+                    </article>
+                    <article class="resumo-card">
+                        <span>Pedidos em andamento</span>
+                        <strong id="pedidos-abertos">0</strong>
+                    </article>
+                    <article class="resumo-card">
+                        <span>Valor dos pedidos listados</span>
+                        <strong id="valor-pedidos">R$ 0,00</strong>
+                    </article>
+                </div>
+
+                <section class="lista-card">
+                    <div class="lista-heading">
+                        <h2>Pedidos recentes</h2>
+                        <span>AtÃ© 100 pedidos</span>
+                    </div>
+
+                    <div class="filtros-admin">
+                        <div>
+                            <label for="filtro-busca-pedido">Buscar pedido ou cliente</label>
+                            <input
+                                id="filtro-busca-pedido"
+                                type="search"
+                                placeholder="NÃºmero do pedido, nome ou telefone"
+                            >
+                        </div>
+                        <div>
+                            <label for="filtro-status-pedido">Filtrar por status</label>
+                            <select id="filtro-status-pedido">
+                                <option value="">Todos os status</option>
+                                <option value="recebido">Recebido</option>
+                                <option value="confirmado">Confirmado</option>
+                                <option value="em_preparo">Em preparo</option>
+                                <option value="pronto_retirada">Pronto para retirada</option>
+                                <option value="saiu_entrega">Saiu para entrega</option>
+                                <option value="entregue">Entregue</option>
+                                <option value="cancelado">Cancelado</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="tabela-scroll">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Pedido</th>
+                                    <th>Cliente</th>
+                                    <th>Data</th>
+                                    <th>Total</th>
+                                    <th>Status</th>
+                                    <th>AÃ§Ãµes</th>
+                                </tr>
+                            </thead>
+                            <tbody id="lista-pedidos">
+                                <tr><td colspan="6">Carregando pedidos...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+            </section>
+
+            <!-- PRODUTOS -->
+            <section id="secao-produtos" class="secao-admin" hidden>
+                <div class="page-heading">
+                    <div>
+                        <span class="eyebrow">CARDÃPIO</span>
+                        <h1>Produtos</h1>
+                        <p>Cadastre e atualize os produtos vendidos pela SALTY.</p>
+                    </div>
+                    <button id="btn-novo-produto" class="btn btn-primary" type="button">Novo produto</button>
+                </div>
+
+                <section id="formulario-produto-card" class="lista-card" hidden>
+                    <h2 id="titulo-form-produto">Cadastrar produto</h2>
+                    <form id="form-produto" class="admin-form">
+                        <input id="produto-id" type="hidden">
+
+                        <label for="produto-nome">Nome</label>
+                        <input id="produto-nome" maxlength="100" required>
+
+                        <label for="produto-descricao">DescriÃ§Ã£o</label>
+                        <textarea id="produto-descricao" maxlength="300" rows="3"></textarea>
+
+                        <label for="produto-categoria">Categoria</label>
+                        <select id="produto-categoria" required>
+                            <option value="">Selecione uma categoria</option>
+                        </select>
+
+                        <label for="produto-preco">PreÃ§o normal (R$)</label>
+                        <input id="produto-preco" type="number" min="0.01" max="99999999.99" step="0.01" required>
+
+                        <label for="produto-preco-promocional">PreÃ§o promocional (R$)</label>
+                        <input
+                            id="produto-preco-promocional"
+                            type="number"
+                            min="0.01"
+                            max="99999999.99"
+                            step="0.01"
+                            placeholder="Deixe vazio se nÃ£o houver promoÃ§Ã£o"
+                        >
+                        <p class="mensagem">O preÃ§o promocional deve ser menor que o preÃ§o normal.</p>
+
+                        <label for="produto-imagem">URL da imagem</label>
+                        <input id="produto-imagem" type="url" maxlength="255">
+
+                        <label for="produto-preparo">Tempo de preparo (minutos)</label>
+                        <input id="produto-preparo" type="number" min="0" max="65535">
+
+                        <label class="admin-check">
+                            <input id="produto-disponivel" type="checkbox" checked>
+                            DisponÃ­vel para venda
+                        </label>
+                        <label class="admin-check">
+                            <input id="produto-destaque" type="checkbox">
+                            Produto em destaque
+                        </label>
+
+                        <div class="admin-actions">
+                            <button class="btn btn-primary" type="submit">Salvar produto</button>
+                            <button id="btn-cancelar-produto" class="btn btn-light" type="button">Cancelar</button>
+                        </div>
+                    </form>
+                </section>
+
+                <section class="lista-card">
+                    <div class="lista-heading">
+                        <h2>Produtos cadastrados</h2>
+                        <button id="btn-atualizar-produtos" class="btn btn-light" type="button">Atualizar</button>
+                    </div>
+                    <div class="tabela-scroll">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Produto</th>
+                                    <th>Categoria</th>
+                                    <th>PreÃ§o</th>
+                                    <th>Disponibilidade</th>
+                                    <th>Ativo</th>
+                                    <th>AÃ§Ãµes</th>
+                                </tr>
+                            </thead>
+                            <tbody id="lista-produtos">
+                                <tr><td colspan="6">Carregue os produtos.</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+            </section>
+
+            <!-- CATEGORIAS -->
+            <section id="secao-categorias" class="secao-admin" hidden>
+                <div class="page-heading">
+                    <div>
+                        <span class="eyebrow">CARDÃPIO</span>
+                        <h1>Categorias</h1>
+                        <p>Cadastre e organize as categorias do cardÃ¡pio da SALTY.</p>
+                    </div>
+                    <button id="btn-nova-categoria" class="btn btn-primary" type="button">Adicionar categoria</button>
+                </div>
+
+                <section id="formulario-categoria-card" class="lista-card" hidden>
+                    <h2>Cadastrar categoria</h2>
+                    <form id="form-categoria" class="admin-form">
+                        <label for="categoria-nome">Nome da categoria</label>
+                        <input id="categoria-nome" type="text" maxlength="60" placeholder="Ex.: HambÃºrgueres" required>
+
+                        <label for="categoria-descricao">DescriÃ§Ã£o</label>
+                        <textarea id="categoria-descricao" maxlength="200" rows="3" placeholder="DescriÃ§Ã£o opcional"></textarea>
+
+                        <label for="categoria-imagem">URL da imagem</label>
+                        <input id="categoria-imagem" type="url" maxlength="255" placeholder="https://...">
+
+                        <label for="categoria-ordem">Ordem de exibiÃ§Ã£o</label>
+                        <input id="categoria-ordem" type="number" min="0" max="65535" step="1" value="0" required>
+
+                        <label class="admin-check">
+                            <input id="categoria-ativa" type="checkbox" checked>
+                            Categoria ativa
+                        </label>
+
+                        <div class="admin-actions">
+                            <button id="btn-salvar-categoria" class="btn btn-primary" type="submit">Salvar categoria</button>
+                            <button id="btn-cancelar-categoria" class="btn btn-light" type="button">Cancelar</button>
+                        </div>
+                        <p id="mensagem-categoria" class="mensagem" role="status" aria-live="polite"></p>
+                    </form>
+                </section>
+
+                <section class="lista-card">
+                    <div class="lista-heading">
+                        <h2>Categorias cadastradas</h2>
+                        <button id="btn-atualizar-categorias" class="btn btn-light" type="button">Atualizar categorias</button>
+                    </div>
+                    <div class="tabela-scroll">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Nome</th>
+                                    <th>DescriÃ§Ã£o</th>
+                                    <th>Ordem</th>
+                                    <th>Ativa</th>
+                                </tr>
+                            </thead>
+                            <tbody id="lista-categorias">
+                                <tr><td colspan="4">Carregue as categorias.</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+            </section>
+
+            <!-- CUPONS -->
+            <section id="secao-cupons" class="secao-admin" hidden>
+                <div class="page-heading">
+                    <div>
+                        <span class="eyebrow">PROMOÃ‡Ã•ES</span>
+                        <h1>Cupons de desconto</h1>
+                        <p>Crie cÃ³digos promocionais para os clientes usarem nos pedidos da SALTY.</p>
+                    </div>
+                    <button id="btn-novo-cupom" class="btn btn-primary" type="button">Novo cupom</button>
+                </div>
+
+                <section id="formulario-cupom-card" class="lista-card" hidden>
+                    <h2 id="titulo-form-cupom">Cadastrar cupom</h2>
+                    <form id="form-cupom" class="admin-form">
+                        <input id="cupom-id" type="hidden">
+
+                        <label for="cupom-codigo">CÃ³digo do cupom</label>
+                        <input id="cupom-codigo" type="text" maxlength="30" placeholder="EXEMPLO10" autocomplete="off" required>
+
+                        <label for="cupom-tipo">Tipo de desconto</label>
+                        <select id="cupom-tipo" required>
+                            <option value="percentual">Porcentagem (%)</option>
+                            <option value="valor_fixo">Valor fixo (R$)</option>
+                        </select>
+
+                        <label for="cupom-valor">Valor do desconto</label>
+                        <input id="cupom-valor" type="number" min="0.01" step="0.01" placeholder="10" required>
+
+                        <label for="cupom-pedido-minimo">Valor mÃ­nimo do pedido (R$)</label>
+                        <input id="cupom-pedido-minimo" type="number" min="0" step="0.01" value="0" required>
+
+                        <label for="cupom-inicio">InÃ­cio da promoÃ§Ã£o</label>
+                        <input id="cupom-inicio" type="datetime-local">
+
+                        <label for="cupom-fim">Fim da promoÃ§Ã£o</label>
+                        <input id="cupom-fim" type="datetime-local">
+
+                        <label for="cupom-limite-total">Limite total de utilizaÃ§Ãµes</label>
+                        <input id="cupom-limite-total" type="number" min="1" step="1" placeholder="Deixe vazio para ilimitado">
+
+                        <label for="cupom-limite-cliente">Limite por cliente</label>
+                        <input id="cupom-limite-cliente" type="number" min="1" step="1" placeholder="Deixe vazio para ilimitado">
+
+                        <label class="admin-check">
+                            <input id="cupom-ativo" type="checkbox" checked>
+                            Cupom ativo
+                        </label>
+
+                        <div class="admin-actions">
+                            <button class="btn btn-primary" type="submit">Salvar cupom</button>
+                            <button id="btn-cancelar-cupom" class="btn btn-light" type="button">Cancelar</button>
+                        </div>
+                    </form>
+                </section>
+
+                <section class="lista-card">
+                    <div class="lista-heading">
+                        <h2>Cupons cadastrados</h2>
+                        <button id="btn-atualizar-cupons" class="btn btn-light" type="button">Atualizar</button>
+                    </div>
+                    <div class="tabela-scroll">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>CÃ³digo</th>
+                                    <th>Desconto</th>
+                                    <th>Pedido mÃ­nimo</th>
+                                    <th>UtilizaÃ§Ãµes</th>
+                                    <th>Validade</th>
+                                    <th>Ativo</th>
+                                    <th>AÃ§Ãµes</th>
+                                </tr>
+                            </thead>
+                            <tbody id="lista-cupons">
+                                <tr><td colspan="7">Os cupons serÃ£o carregados aqui.</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+            </section>
+
+            <!-- FATURAMENTO -->
+            <section id="secao-faturamento" class="secao-admin" hidden>
+                <div class="page-heading">
+                    <div>
+                        <span class="eyebrow">FINANCEIRO</span>
+                        <h1>Faturamento</h1>
+                        <p>Consulte os pagamentos confirmados da SALTY.</p>
+                    </div>
+                    <button id="btn-atualizar-faturamento" class="btn btn-light" type="button">Atualizar faturamento</button>
+                </div>
+
+                <section class="lista-card">
+                    <label for="filtro-periodo-faturamento">PerÃ­odo</label>
+                    <select id="filtro-periodo-faturamento">
+                        <option value="todo_periodo">Todo o perÃ­odo</option>
+                        <option value="hoje">Hoje</option>
+                        <option value="ontem">Ontem</option>
+                        <option value="ultimos_7_dias">Ãšltimos 7 dias</option>
+                        <option value="ultimos_30_dias">Ãšltimos 30 dias</option>
+                        <option value="mes_atual">MÃªs atual</option>
+                        <option value="mes_anterior">MÃªs anterior</option>
+                        <option value="ano_atual">Ano atual</option>
+                        <option value="personalizado">Personalizado</option>
+                    </select>
+
+                    <div id="campos-periodo-personalizado" class="filtros-admin" hidden>
+                        <div>
+                            <label for="faturamento-data-inicial">Data inicial</label>
+                            <input id="faturamento-data-inicial" type="date">
+                        </div>
+                        <div>
+                            <label for="faturamento-data-final">Data final</label>
+                            <input id="faturamento-data-final" type="date">
+                        </div>
+                        <button id="btn-aplicar-filtro-faturamento" class="btn btn-primary" type="button">Aplicar filtro</button>
+                    </div>
+                    <p id="mensagem-filtro-faturamento" class="mensagem" role="status"></p>
+                </section>
+
+                <div class="resumo">
+                    <article class="resumo-card">
+                        <span>Total recebido</span>
+                        <strong id="faturamento-total">R$ 0,00</strong>
+                    </article>
+                    <article class="resumo-card">
+                        <span>Pagamentos</span>
+                        <strong id="faturamento-quantidade">0</strong>
+                    </article>
+                    <article class="resumo-card">
+                        <span>Ticket mÃ©dio</span>
+                        <strong id="faturamento-ticket-medio">R$ 0,00</strong>
+                    </article>
+                </div>
+
+                <section class="lista-card">
+                    <div class="lista-heading">
+                        <h2>Pagamentos confirmados</h2>
+                    </div>
+                    <div class="tabela-scroll">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Pedido</th>
+                                    <th>Cliente</th>
+                                    <th>Forma</th>
+                                    <th>Valor pago</th>
+                                    <th>Data do pagamento</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="lista-faturamento">
+                                <tr><td colspan="6">Selecione um perÃ­odo para consultar.</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+            </section>
+
+            <!-- CONFIGURAÃ‡Ã•ES -->
+            <section id="secao-configuracoes" class="secao-admin" hidden>
+                <div class="page-heading">
+                    <div>
+                        <span class="eyebrow">LOJA</span>
+                        <h1>ConfiguraÃ§Ãµes</h1>
+                        <p>Configure o valor da entrega da SALTY.</p>
+                    </div>
+                </div>
+
+                                <section class="lista-card">
+                    <h2>Funcionamento da loja</h2>
+                    <p>Controle se a SALTY estÃ¡ aberta para receber pedidos e configure os horÃ¡rios de funcionamento.</p>
+
+                    <div class="admin-actions">
+                        <span id="loja-status-badge" class="badge-loja">Carregando status...</span>
+                        <p id="loja-status-detalhe" class="mensagem" role="status" aria-live="polite">Consultando funcionamento da loja...</p>
+                    </div>
+
+                    <div class="admin-actions">
+                        <button id="btn-loja-abrir" class="btn btn-light" type="button">Abrir loja</button>
+                        <button id="btn-loja-fechar" class="btn btn-light" type="button">Fechar loja</button>
+                        <button id="btn-loja-automatico" class="btn btn-light" type="button">Seguir horÃ¡rios</button>
+                    </div>
+
+                    <p id="mensagem-funcionamento" class="mensagem" role="status" aria-live="polite"></p>
+
+                    <hr>
+
+                    <h3>HorÃ¡rios semanais</h3>
+                    <p>Marque os dias em que a loja funciona e informe os horÃ¡rios de abertura e fechamento.</p>
+
+                    <form id="form-funcionamento" class="admin-form">
+                        <div id="funcionamento-dias">
+                            <p>Carregando horÃ¡rios...</p>
+                        </div>
+
+                        <div class="admin-actions">
+                            <button class="btn btn-primary" type="submit">Salvar horÃ¡rios</button>
+                        </div>
+                    </form>
+                </section>
+<section class="lista-card">
+                    <h2>Taxa de entrega</h2>
+                    <p>Defina o valor cobrado para entregar os pedidos aos clientes.</p>
+
+                    <form id="form-taxa-entrega" class="admin-form">
+                        <label for="taxa-entrega">Valor da entrega (R$)</label>
+                        <input
+                            id="taxa-entrega"
+                            name="taxa-entrega"
+                            type="number"
+                            min="0"
+                            max="99999999.99"
+                            step="0.01"
+                            value="7.00"
+                            required
+                        >
+                        <p class="mensagem">O valor salvo serÃ¡ aplicado aos prÃ³ximos pedidos. Pedidos jÃ¡ registrados nÃ£o serÃ£o alterados.</p>
+                        <button id="btn-salvar-taxa-entrega" class="btn btn-primary" type="submit">Salvar taxa</button>
+                        <p id="mensagem-taxa-entrega" class="mensagem" role="status" aria-live="polite"></p>
+                    </form>
+                </section>
+            </section>
+
+            <!-- CLIENTES: DENTRO DO PAINEL -->
+            <section id="secao-clientes" class="secao-admin" hidden>
+                <div class="page-heading">
+                    <div>
+                        <span class="eyebrow">CADASTROS</span>
+                        <h1>GestÃ£o de clientes</h1>
+                        <p>Consulte os clientes que fizeram pedidos na SALTY.</p>
+                    </div>
+                    <button
+                        class="btn btn-primary"
+                        id="btn-atualizar-clientes"
+                        type="button"
+                    >
+                        Atualizar clientes
+                    </button>
+                </div>
+
+                <section class="lista-card">
+                    <div class="filtros-admin">
+                        <div>
+                            <label for="filtro-busca-cliente">Buscar cliente</label>
+                            <input
+                                type="search"
+                                id="filtro-busca-cliente"
+                                placeholder="Buscar por nome ou telefone..."
+                                aria-label="Buscar cliente por nome ou telefone"
+                            >
+                        </div>
+                    </div>
+
+                    <div class="tabela-scroll">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Cliente</th>
+                                    <th>Telefone</th>
+                                    <th>Pedidos</th>
+                                    <th>Total gasto</th>
+                                    <th>Ãšltima compra</th>
+                                </tr>
+                            </thead>
+                            <tbody id="lista-clientes">
+                                <tr>
+                                    <td colspan="5">Carregue os clientes.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+            </section>
+        </section>
+    </main>
+
+    <!-- DETALHES DO PEDIDO -->
+    <dialog id="dialog-detalhes" class="dialog">
+        <div class="dialog-heading">
+            <h2 id="detalhe-titulo">Detalhes do pedido</h2>
+            <button id="btn-fechar" class="btn btn-light" type="button">Fechar</button>
+        </div>
+        <div id="detalhe-conteudo"></div>
+        <div class="dialog-actions">
+            <button id="btn-imprimir" class="btn btn-light" type="button">Imprimir / Salvar PDF</button>
+        </div>
+    </dialog>
+</body>
+</html>
+

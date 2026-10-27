@@ -44,6 +44,7 @@ let categorias = [];
 let cupons = [];
 let clientes = [];
 let faturamento = null;
+let uploadImagemEmAndamento = false;
 
 /* =========================
    FUNÇÕES AUXILIARES
@@ -1046,6 +1047,120 @@ function renderizarProdutos() {
   });
 }
 
+function definirStatusUploadImagem(texto, erro = false) {
+  const status = $("#produto-imagem-status");
+  if (!status) return;
+  status.textContent = texto;
+  status.dataset.tipo = erro ? "erro" : "sucesso";
+}
+
+function atualizarPreviewImagem(url) {
+  const preview = $("#produto-imagem-preview");
+  if (!preview) return;
+  const valor = (url || "").trim();
+
+  if (!valor) {
+    preview.removeAttribute("src");
+    preview.hidden = true;
+    return;
+  }
+
+  try {
+    const endereco = new URL(valor);
+    if (!["http:", "https:"].includes(endereco.protocol)) {
+      throw new Error("URL invalida.");
+    }
+    preview.src = endereco.href;
+    preview.hidden = false;
+  } catch {
+    preview.removeAttribute("src");
+    preview.hidden = true;
+  }
+}
+
+async function enviarImagemProduto(arquivo) {
+  definirStatusUploadImagem("Preparando o envio da imagem...");
+  const assinatura = await requisicao("/produtos/upload-assinatura");
+
+  const dados = new FormData();
+  dados.append("file", arquivo);
+  dados.append("api_key", assinatura.api_key);
+  dados.append("timestamp", String(assinatura.timestamp));
+  dados.append("folder", assinatura.folder);
+  dados.append("signature", assinatura.signature);
+
+  const resposta = await fetch(
+    `https://api.cloudinary.com/v1_1/${encodeURIComponent(assinatura.cloud_name)}/image/upload`,
+    { method: "POST", body: dados }
+  );
+
+  let resultado;
+  try {
+    resultado = await resposta.json();
+  } catch {
+    throw new Error("Resposta invalida do servico de imagens.");
+  }
+
+  if (!resposta.ok) {
+    throw new Error(
+      resultado?.error?.message || "Falha no envio da imagem."
+    );
+  }
+
+  if (!resultado.secure_url) {
+    throw new Error("O servico nao retornou uma URL segura.");
+  }
+
+  const campoUrl = $("#produto-imagem");
+  if (!campoUrl) throw new Error("Campo da URL nao encontrado.");
+
+  campoUrl.value = resultado.secure_url;
+  atualizarPreviewImagem(resultado.secure_url);
+  definirStatusUploadImagem("Imagem enviada com sucesso.");
+}
+
+$("#produto-imagem-arquivo")?.addEventListener("change", async evento => {
+  const campoArquivo = evento.currentTarget;
+  const arquivo = campoArquivo.files?.[0];
+  if (!arquivo) return;
+
+  const tiposPermitidos = [
+    "image/jpeg", "image/png", "image/webp", "image/avif"
+  ];
+
+  if (!tiposPermitidos.includes(arquivo.type)) {
+    definirStatusUploadImagem("Use uma imagem JPG, PNG, WEBP ou AVIF.", true);
+    campoArquivo.value = "";
+    return;
+  }
+
+  if (arquivo.size > 5 * 1024 * 1024) {
+    definirStatusUploadImagem("A imagem deve ter no maximo 5 MB.", true);
+    campoArquivo.value = "";
+    return;
+  }
+
+  if (uploadImagemEmAndamento) {
+    definirStatusUploadImagem("Ja existe um envio em andamento.", true);
+    campoArquivo.value = "";
+    return;
+  }
+
+  uploadImagemEmAndamento = true;
+  try {
+    await enviarImagemProduto(arquivo);
+  } catch (erro) {
+    definirStatusUploadImagem(erro.message || "Falha no envio.", true);
+    campoArquivo.value = "";
+  } finally {
+    uploadImagemEmAndamento = false;
+  }
+});
+
+$("#produto-imagem")?.addEventListener("input", evento => {
+  atualizarPreviewImagem(evento.currentTarget.value);
+});
+
 function abrirFormularioProduto(produto = null) {
   const form = $("#form-produto");
   const card = $("#formulario-produto-card");
@@ -1059,6 +1174,8 @@ function abrirFormularioProduto(produto = null) {
   }
 
   form.reset();
+  definirStatusUploadImagem("");
+  atualizarPreviewImagem("");
   card.hidden = false;
 
   if ($("#produto-id")) {
@@ -1103,6 +1220,8 @@ function abrirFormularioProduto(produto = null) {
         : "";
   }
 
+  atualizarPreviewImagem($("#produto-imagem")?.value || "");
+
   card.scrollIntoView({
     behavior: "smooth",
     block: "start"
@@ -1114,6 +1233,8 @@ function fecharFormularioProduto() {
   if (card) card.hidden = true;
 
   $("#form-produto")?.reset();
+  definirStatusUploadImagem("");
+  atualizarPreviewImagem("");
 
   if ($("#produto-id")) {
     $("#produto-id").value = "";
@@ -1135,6 +1256,11 @@ $("#form-produto")?.addEventListener(
   "submit",
   async evento => {
     evento.preventDefault();
+
+    if (uploadImagemEmAndamento) {
+      mostrarMensagem("Aguarde o envio da imagem terminar.", true);
+      return;
+    }
 
     const id = $("#produto-id")?.value || "";
     const precoTexto = $("#produto-preco")?.value.trim() || "";

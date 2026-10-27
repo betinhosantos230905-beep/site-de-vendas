@@ -1,6 +1,8 @@
 
 import hmac
 import os
+
+import cloudinary.utils
 from functools import wraps
 from datetime import datetime, date, time, timedelta, timezone
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
@@ -110,6 +112,46 @@ def logout_admin():
 def verificar_sessao_admin():
     return jsonify({
         "autenticado": bool(session.get("admin_logado"))
+    }), 200
+
+
+# ==========================================
+# ASSINATURA SEGURA PARA UPLOAD DE IMAGENS
+# ==========================================
+
+@admin_bp.post("/produtos/upload-assinatura")
+@exigir_login_admin
+def assinar_upload_imagem_produto():
+    cloud_name = os.getenv("CLOUDINARY_CLOUD_NAME", "").strip()
+    api_key = os.getenv("CLOUDINARY_API_KEY", "").strip()
+    api_secret = os.getenv("CLOUDINARY_API_SECRET", "").strip()
+
+    if not cloud_name or not api_key or not api_secret:
+        return jsonify({
+            "error": "Configuracao do armazenamento de imagens incompleta."
+        }), 500
+
+    timestamp = int(datetime.now(timezone.utc).timestamp())
+    parametros = {
+        "timestamp": timestamp,
+        "folder": "salty/produtos",
+    }
+
+    try:
+        assinatura = cloudinary.utils.api_sign_request(
+            parametros,
+            api_secret,
+        )
+    except Exception:
+        return jsonify({
+            "error": "Nao foi possivel preparar o envio da imagem."
+        }), 500
+
+    return jsonify({
+        **parametros,
+        "signature": assinatura,
+        "api_key": api_key,
+        "cloud_name": cloud_name,
     }), 200
 
 
