@@ -1750,3 +1750,74 @@ textarea {
   object-fit: cover;
   border-radius: inherit;
 }
+/* =========================
+   RODAPE SALTY
+   ========================= */
+
+.rodape {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 24px 16px;
+  margin-top: 24px;
+  text-align: center;
+}
+
+.rodape-contatos {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.link-rodape {
+  color: var(--cor);
+  font-family: "DM Sans", sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+.link-rodape:hover {
+  text-decoration: underline;
+}
+
+.rodape-separador {
+  color: var(--cor);
+  opacity: 0.65;
+}
+
+.link-admin {
+  color: var(--cor);
+  font-family: "DM Sans", sans-serif;
+  font-size: 12px;
+  font-weight: 400;
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+.link-admin:hover {
+  text-decoration: underline;
+}
+
+.link-admin:focus-visible,
+.link-rodape:focus-visible {
+  outline: 2px solid var(--cor);
+  outline-offset: 4px;
+  border-radius: 2px;
+}
+
+@media (max-width: 480px) {
+  .rodape {
+    padding: 20px 12px;
+    gap: 10px;
+  }
+
+  .rodape-contatos {
+    gap: 8px;
+  }
+}
