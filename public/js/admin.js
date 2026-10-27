@@ -1134,8 +1134,8 @@ $("#produto-imagem-arquivo")?.addEventListener("change", async evento => {
     return;
   }
 
-  if (arquivo.size > 5 * 1024 * 1024) {
-    definirStatusUploadImagem("A imagem deve ter no maximo 5 MB.", true);
+  if (arquivo.size > 10 * 1024 * 1024) {
+    definirStatusUploadImagem("A imagem deve ter no maximo 10 MB.", true);
     campoArquivo.value = "";
     return;
   }
@@ -2430,5 +2430,7 @@ $("#btn-imprimir")?.addEventListener("click", () => {
 ========================= */
 
 verificarSessao();
+
+
 
 
