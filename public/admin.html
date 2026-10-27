@@ -1,11 +1,10 @@
-﻿
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="theme-color" content="#e63a1e">
-    <title>SALTY | AdministraÃ§Ã£o</title>
+    <title>SALTY | Administração</title>
     <link rel="stylesheet" href="/css/admin.css">
     <script src="/js/admin.js" defer></script>
 </head>
@@ -19,8 +18,8 @@
     <main class="container">
         <!-- LOGIN -->
         <section id="tela-login" class="login-card">
-            <span class="eyebrow">ÃREA RESTRITA</span>
-            <h1>Entrar na administraÃ§Ã£o</h1>
+            <span class="eyebrow">ÁREA RESTRITA</span>
+            <h1>Entrar na administração</h1>
             <p>Acesse para gerenciar a SALTY.</p>
 
             <form id="form-login">
@@ -39,13 +38,13 @@
 
         <!-- PAINEL ADMINISTRATIVO -->
         <section id="tela-painel" hidden>
-            <nav class="admin-nav" aria-label="AdministraÃ§Ã£o">
+            <nav class="admin-nav" aria-label="Administração">
                 <button class="btn btn-primary aba-admin ativa" data-aba="pedidos" type="button">Pedidos</button>
                 <button class="btn btn-light aba-admin" data-aba="produtos" type="button">Produtos</button>
                 <button class="btn btn-light aba-admin" data-aba="categorias" type="button">Categorias</button>
                 <button class="btn btn-light aba-admin" data-aba="cupons" type="button">Cupons</button>
                 <button class="btn btn-light aba-admin" data-aba="faturamento" type="button">Faturamento</button>
-                <button class="btn btn-light aba-admin" data-aba="configuracoes" type="button">ConfiguraÃ§Ãµes</button>
+                <button class="btn btn-light aba-admin" data-aba="configuracoes" type="button">Configurações</button>
                 <button class="btn btn-light aba-admin" data-aba="clientes" type="button">Clientes</button>
             </nav>
 
@@ -80,7 +79,7 @@
                 <section class="lista-card">
                     <div class="lista-heading">
                         <h2>Pedidos recentes</h2>
-                        <span>AtÃ© 100 pedidos</span>
+                        <span>Até 100 pedidos</span>
                     </div>
 
                     <div class="filtros-admin">
@@ -89,7 +88,7 @@
                             <input
                                 id="filtro-busca-pedido"
                                 type="search"
-                                placeholder="NÃºmero do pedido, nome ou telefone"
+                                placeholder="Número do pedido, nome ou telefone"
                             >
                         </div>
                         <div>
@@ -116,7 +115,7 @@
                                     <th>Data</th>
                                     <th>Total</th>
                                     <th>Status</th>
-                                    <th>AÃ§Ãµes</th>
+                                    <th>Ações</th>
                                 </tr>
                             </thead>
                             <tbody id="lista-pedidos">
@@ -131,7 +130,7 @@
             <section id="secao-produtos" class="secao-admin" hidden>
                 <div class="page-heading">
                     <div>
-                        <span class="eyebrow">CARDÃPIO</span>
+                        <span class="eyebrow">CARDÁPIO</span>
                         <h1>Produtos</h1>
                         <p>Cadastre e atualize os produtos vendidos pela SALTY.</p>
                     </div>
@@ -146,7 +145,7 @@
                         <label for="produto-nome">Nome</label>
                         <input id="produto-nome" maxlength="100" required>
 
-                        <label for="produto-descricao">DescriÃ§Ã£o</label>
+                        <label for="produto-descricao">Descrição</label>
                         <textarea id="produto-descricao" maxlength="300" rows="3"></textarea>
 
                         <label for="produto-categoria">Categoria</label>
@@ -154,19 +153,19 @@
                             <option value="">Selecione uma categoria</option>
                         </select>
 
-                        <label for="produto-preco">PreÃ§o normal (R$)</label>
+                        <label for="produto-preco">Preço normal (R$)</label>
                         <input id="produto-preco" type="number" min="0.01" max="99999999.99" step="0.01" required>
 
-                        <label for="produto-preco-promocional">PreÃ§o promocional (R$)</label>
+                        <label for="produto-preco-promocional">Preço promocional (R$)</label>
                         <input
                             id="produto-preco-promocional"
                             type="number"
                             min="0.01"
                             max="99999999.99"
                             step="0.01"
-                            placeholder="Deixe vazio se nÃ£o houver promoÃ§Ã£o"
+                            placeholder="Deixe vazio se não houver promoção"
                         >
-                        <p class="mensagem">O preÃ§o promocional deve ser menor que o preÃ§o normal.</p>
+                        <p class="mensagem">O preço promocional deve ser menor que o preço normal.</p>
 
 
 <label for="produto-imagem">URL da imagem</label>
@@ -194,7 +193,7 @@
 
                         <label class="admin-check">
                             <input id="produto-disponivel" type="checkbox" checked>
-                            DisponÃ­vel para venda
+                            Disponível para venda
                         </label>
                         <label class="admin-check">
                             <input id="produto-destaque" type="checkbox">
@@ -219,10 +218,10 @@
                                 <tr>
                                     <th>Produto</th>
                                     <th>Categoria</th>
-                                    <th>PreÃ§o</th>
+                                    <th>Preço</th>
                                     <th>Disponibilidade</th>
                                     <th>Ativo</th>
-                                    <th>AÃ§Ãµes</th>
+                                    <th>Ações</th>
                                 </tr>
                             </thead>
                             <tbody id="lista-produtos">
@@ -237,9 +236,9 @@
             <section id="secao-categorias" class="secao-admin" hidden>
                 <div class="page-heading">
                     <div>
-                        <span class="eyebrow">CARDÃPIO</span>
+                        <span class="eyebrow">CARDÁPIO</span>
                         <h1>Categorias</h1>
-                        <p>Cadastre e organize as categorias do cardÃ¡pio da SALTY.</p>
+                        <p>Cadastre e organize as categorias do cardápio da SALTY.</p>
                     </div>
                     <button id="btn-nova-categoria" class="btn btn-primary" type="button">Adicionar categoria</button>
                 </div>
@@ -248,15 +247,15 @@
                     <h2>Cadastrar categoria</h2>
                     <form id="form-categoria" class="admin-form">
                         <label for="categoria-nome">Nome da categoria</label>
-                        <input id="categoria-nome" type="text" maxlength="60" placeholder="Ex.: HambÃºrgueres" required>
+                        <input id="categoria-nome" type="text" maxlength="60" placeholder="Ex.: Hambúrgueres" required>
 
-                        <label for="categoria-descricao">DescriÃ§Ã£o</label>
-                        <textarea id="categoria-descricao" maxlength="200" rows="3" placeholder="DescriÃ§Ã£o opcional"></textarea>
+                        <label for="categoria-descricao">Descrição</label>
+                        <textarea id="categoria-descricao" maxlength="200" rows="3" placeholder="Descrição opcional"></textarea>
 
                         <label for="categoria-imagem">URL da imagem</label>
                         <input id="categoria-imagem" type="url" maxlength="255" placeholder="https://...">
 
-                        <label for="categoria-ordem">Ordem de exibiÃ§Ã£o</label>
+                        <label for="categoria-ordem">Ordem de exibição</label>
                         <input id="categoria-ordem" type="number" min="0" max="65535" step="1" value="0" required>
 
                         <label class="admin-check">
@@ -282,7 +281,7 @@
                             <thead>
                                 <tr>
                                     <th>Nome</th>
-                                    <th>DescriÃ§Ã£o</th>
+                                    <th>Descrição</th>
                                     <th>Ordem</th>
                                     <th>Ativa</th>
                                 </tr>
@@ -299,9 +298,9 @@
             <section id="secao-cupons" class="secao-admin" hidden>
                 <div class="page-heading">
                     <div>
-                        <span class="eyebrow">PROMOÃ‡Ã•ES</span>
+                        <span class="eyebrow">PROMOÇÕES</span>
                         <h1>Cupons de desconto</h1>
-                        <p>Crie cÃ³digos promocionais para os clientes usarem nos pedidos da SALTY.</p>
+                        <p>Crie códigos promocionais para os clientes usarem nos pedidos da SALTY.</p>
                     </div>
                     <button id="btn-novo-cupom" class="btn btn-primary" type="button">Novo cupom</button>
                 </div>
@@ -311,7 +310,7 @@
                     <form id="form-cupom" class="admin-form">
                         <input id="cupom-id" type="hidden">
 
-                        <label for="cupom-codigo">CÃ³digo do cupom</label>
+                        <label for="cupom-codigo">Código do cupom</label>
                         <input id="cupom-codigo" type="text" maxlength="30" placeholder="EXEMPLO10" autocomplete="off" required>
 
                         <label for="cupom-tipo">Tipo de desconto</label>
@@ -323,16 +322,16 @@
                         <label for="cupom-valor">Valor do desconto</label>
                         <input id="cupom-valor" type="number" min="0.01" step="0.01" placeholder="10" required>
 
-                        <label for="cupom-pedido-minimo">Valor mÃ­nimo do pedido (R$)</label>
+                        <label for="cupom-pedido-minimo">Valor mínimo do pedido (R$)</label>
                         <input id="cupom-pedido-minimo" type="number" min="0" step="0.01" value="0" required>
 
-                        <label for="cupom-inicio">InÃ­cio da promoÃ§Ã£o</label>
+                        <label for="cupom-inicio">Início da promoção</label>
                         <input id="cupom-inicio" type="datetime-local">
 
-                        <label for="cupom-fim">Fim da promoÃ§Ã£o</label>
+                        <label for="cupom-fim">Fim da promoção</label>
                         <input id="cupom-fim" type="datetime-local">
 
-                        <label for="cupom-limite-total">Limite total de utilizaÃ§Ãµes</label>
+                        <label for="cupom-limite-total">Limite total de utilizações</label>
                         <input id="cupom-limite-total" type="number" min="1" step="1" placeholder="Deixe vazio para ilimitado">
 
                         <label for="cupom-limite-cliente">Limite por cliente</label>
@@ -359,17 +358,17 @@
                         <table>
                             <thead>
                                 <tr>
-                                    <th>CÃ³digo</th>
+                                    <th>Código</th>
                                     <th>Desconto</th>
-                                    <th>Pedido mÃ­nimo</th>
-                                    <th>UtilizaÃ§Ãµes</th>
+                                    <th>Pedido mínimo</th>
+                                    <th>Utilizações</th>
                                     <th>Validade</th>
                                     <th>Ativo</th>
-                                    <th>AÃ§Ãµes</th>
+                                    <th>Ações</th>
                                 </tr>
                             </thead>
                             <tbody id="lista-cupons">
-                                <tr><td colspan="7">Os cupons serÃ£o carregados aqui.</td></tr>
+                                <tr><td colspan="7">Os cupons serão carregados aqui.</td></tr>
                             </tbody>
                         </table>
                     </div>
@@ -388,15 +387,15 @@
                 </div>
 
                 <section class="lista-card">
-                    <label for="filtro-periodo-faturamento">PerÃ­odo</label>
+                    <label for="filtro-periodo-faturamento">Período</label>
                     <select id="filtro-periodo-faturamento">
-                        <option value="todo_periodo">Todo o perÃ­odo</option>
+                        <option value="todo_periodo">Todo o período</option>
                         <option value="hoje">Hoje</option>
                         <option value="ontem">Ontem</option>
-                        <option value="ultimos_7_dias">Ãšltimos 7 dias</option>
-                        <option value="ultimos_30_dias">Ãšltimos 30 dias</option>
-                        <option value="mes_atual">MÃªs atual</option>
-                        <option value="mes_anterior">MÃªs anterior</option>
+                        <option value="ultimos_7_dias">Últimos 7 dias</option>
+                        <option value="ultimos_30_dias">Últimos 30 dias</option>
+                        <option value="mes_atual">Mês atual</option>
+                        <option value="mes_anterior">Mês anterior</option>
                         <option value="ano_atual">Ano atual</option>
                         <option value="personalizado">Personalizado</option>
                     </select>
@@ -425,7 +424,7 @@
                         <strong id="faturamento-quantidade">0</strong>
                     </article>
                     <article class="resumo-card">
-                        <span>Ticket mÃ©dio</span>
+                        <span>Ticket médio</span>
                         <strong id="faturamento-ticket-medio">R$ 0,00</strong>
                     </article>
                 </div>
@@ -447,26 +446,26 @@
                                 </tr>
                             </thead>
                             <tbody id="lista-faturamento">
-                                <tr><td colspan="6">Selecione um perÃ­odo para consultar.</td></tr>
+                                <tr><td colspan="6">Selecione um período para consultar.</td></tr>
                             </tbody>
                         </table>
                     </div>
                 </section>
             </section>
 
-            <!-- CONFIGURAÃ‡Ã•ES -->
+            <!-- CONFIGURAÇÕES -->
             <section id="secao-configuracoes" class="secao-admin" hidden>
                 <div class="page-heading">
                     <div>
                         <span class="eyebrow">LOJA</span>
-                        <h1>ConfiguraÃ§Ãµes</h1>
+                        <h1>Configurações</h1>
                         <p>Configure o valor da entrega da SALTY.</p>
                     </div>
                 </div>
 
                                 <section class="lista-card">
                     <h2>Funcionamento da loja</h2>
-                    <p>Controle se a SALTY estÃ¡ aberta para receber pedidos e configure os horÃ¡rios de funcionamento.</p>
+                    <p>Controle se a SALTY está aberta para receber pedidos e configure os horários de funcionamento.</p>
 
                     <div class="admin-actions">
                         <span id="loja-status-badge" class="badge-loja">Carregando status...</span>
@@ -476,23 +475,23 @@
                     <div class="admin-actions">
                         <button id="btn-loja-abrir" class="btn btn-light" type="button">Abrir loja</button>
                         <button id="btn-loja-fechar" class="btn btn-light" type="button">Fechar loja</button>
-                        <button id="btn-loja-automatico" class="btn btn-light" type="button">Seguir horÃ¡rios</button>
+                        <button id="btn-loja-automatico" class="btn btn-light" type="button">Seguir horários</button>
                     </div>
 
                     <p id="mensagem-funcionamento" class="mensagem" role="status" aria-live="polite"></p>
 
                     <hr>
 
-                    <h3>HorÃ¡rios semanais</h3>
-                    <p>Marque os dias em que a loja funciona e informe os horÃ¡rios de abertura e fechamento.</p>
+                    <h3>Horários semanais</h3>
+                    <p>Marque os dias em que a loja funciona e informe os horários de abertura e fechamento.</p>
 
                     <form id="form-funcionamento" class="admin-form">
                         <div id="funcionamento-dias">
-                            <p>Carregando horÃ¡rios...</p>
+                            <p>Carregando horários...</p>
                         </div>
 
                         <div class="admin-actions">
-                            <button class="btn btn-primary" type="submit">Salvar horÃ¡rios</button>
+                            <button class="btn btn-primary" type="submit">Salvar horários</button>
                         </div>
                     </form>
                 </section>
@@ -512,7 +511,7 @@
                             value="7.00"
                             required
                         >
-                        <p class="mensagem">O valor salvo serÃ¡ aplicado aos prÃ³ximos pedidos. Pedidos jÃ¡ registrados nÃ£o serÃ£o alterados.</p>
+                        <p class="mensagem">O valor salvo será aplicado aos próximos pedidos. Pedidos já registrados não serão alterados.</p>
                         <button id="btn-salvar-taxa-entrega" class="btn btn-primary" type="submit">Salvar taxa</button>
                         <p id="mensagem-taxa-entrega" class="mensagem" role="status" aria-live="polite"></p>
                     </form>
@@ -524,7 +523,7 @@
                 <div class="page-heading">
                     <div>
                         <span class="eyebrow">CADASTROS</span>
-                        <h1>GestÃ£o de clientes</h1>
+                        <h1>Gestão de clientes</h1>
                         <p>Consulte os clientes que fizeram pedidos na SALTY.</p>
                     </div>
                     <button
@@ -557,7 +556,7 @@
                                     <th>Telefone</th>
                                     <th>Pedidos</th>
                                     <th>Total gasto</th>
-                                    <th>Ãšltima compra</th>
+                                    <th>Última compra</th>
                                 </tr>
                             </thead>
                             <tbody id="lista-clientes">
