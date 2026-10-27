@@ -1080,7 +1080,7 @@ function atualizarPreviewImagem(url) {
 
 async function enviarImagemProduto(arquivo) {
   definirStatusUploadImagem("Preparando o envio da imagem...");
-  const assinatura = await requisicao("/produtos/upload-assinatura");
+  const assinatura = await requisicao("/produtos/upload-assinatura", { method: "POST" });
 
   const dados = new FormData();
   dados.append("file", arquivo);
@@ -2430,6 +2430,7 @@ $("#btn-imprimir")?.addEventListener("click", () => {
 ========================= */
 
 verificarSessao();
+
 
 
 
