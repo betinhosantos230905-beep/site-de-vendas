@@ -337,3 +337,143 @@ select {
         display: none;
     }
 }
+
+/* ===== Painel: layout dos formulários e navegação ===== */
+
+.admin-nav {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+.lista-card + .lista-card {
+    margin-top: 20px;
+}
+
+textarea {
+    width: 100%;
+    padding: 13px;
+    border: 1px solid var(--borda);
+    border-radius: 10px;
+    font: inherit;
+    outline-color: var(--cor);
+}
+
+.admin-check {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.admin-check input,
+.dia-nome input {
+    width: auto;
+}
+
+.admin-actions,
+.acoes-loja {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.filtros-admin {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 14px;
+    margin-bottom: 18px;
+}
+
+.filtros-admin select {
+    width: 100%;
+    max-width: none;
+}
+
+td .btn {
+    margin: 2px 6px 2px 0;
+    padding: 8px 12px;
+}
+
+.btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.btn-perigo {
+    color: #b3261e;
+    border-color: #f1c4bd;
+}
+
+.badge-destaque {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 999px;
+    background: #fff0e0;
+    color: #b45309;
+    font-size: 12px;
+    font-weight: 700;
+}
+
+/* ===== Funcionamento da loja ===== */
+
+.loja-status {
+    margin: 14px 0 6px;
+}
+
+.badge-loja {
+    display: inline-block;
+    padding: 8px 18px;
+    border-radius: 999px;
+    background: #fff0e0;
+    color: #b45309;
+    font-weight: 800;
+}
+
+.badge-loja.loja-aberta {
+    background: #e3f6ea;
+    color: #17703c;
+}
+
+.badge-loja.loja-fechada {
+    background: #fde8e4;
+    color: #b3261e;
+}
+
+.dia-funcionamento {
+    display: grid;
+    grid-template-columns: 190px 1fr;
+    gap: 12px;
+    align-items: center;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--borda);
+}
+
+.dia-nome {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.periodos-dia {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px 22px;
+}
+
+.periodo {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.periodo input[type="time"] {
+    width: auto;
+    padding: 9px;
+}
+
+@media (max-width: 700px) {
+    .dia-funcionamento {
+        grid-template-columns: 1fr;
+    }
+}
