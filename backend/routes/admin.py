@@ -359,6 +359,19 @@ def atualizar_status_pedido(pedido_id):
             VALUES (%s, %s, %s)
         """, (pedido_id, status_anterior, novo_status))
 
+        # Ao entregar o pedido, confirmar o pagamento.
+        if novo_status == "entregue":
+            data_pagamento = agora_brasil()
+
+            cursor.execute("""
+                UPDATE pagamentos
+                SET
+                    pago_em = COALESCE(pago_em, %s),
+                    status = 'pago'
+                WHERE pedido_id = %s
+                  AND status = 'pendente'
+            """, (data_pagamento, pedido_id))
+
         conexao.commit()
 
         return jsonify({
