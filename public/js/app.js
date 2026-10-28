@@ -1115,7 +1115,7 @@ function abrirCheckout() {
 
   const dlg = $("checkout-dialog");
 
-  chavePedidoPendente ||= criarChavePedido();
+    chavePedidoPendente ||= criarChavePedido();
 
   const nome = criarCampoCheckout(
     "checkout-nome", "Seu nome"
@@ -1126,6 +1126,12 @@ function abrirCheckout() {
   );
 
   telefone.input.value = state.couponPhone || "";
+
+  const email = criarCampoCheckout(
+    "checkout-email", "Seu e-mail", "email"
+  );
+
+  email.input.autocomplete = "email";
 
   const modalidade = h("select", {
     id: "checkout-modalidade",
@@ -1270,6 +1276,7 @@ function abrirCheckout() {
         chave_idempotencia: chavePedidoPendente,
         nome: nome.input.value.trim(),
         telefone: telefoneCliente,
+        email: email.input.value.trim(),
         modalidade: tipoEntrega,
         pagamento: pagamento.value,
 
@@ -1360,6 +1367,7 @@ function abrirCheckout() {
   },
     nome.label,
     telefone.label,
+    email.label,
     modalidadeLabel,
     endereco,
     pagamentoLabel,
@@ -1412,10 +1420,10 @@ function abrirCheckout() {
     });
   };
 
-  const atualizarTroco = () => {
+    const atualizarTroco = () => {
     troco.label.hidden = pagamento.value !== "dinheiro";
-  };
-
+    email.input.required = pagamento.value === "pix";
+    };
   modalidade.addEventListener("change", () => {
     atualizarEndereco();
     atualizarTotaisCheckout();
