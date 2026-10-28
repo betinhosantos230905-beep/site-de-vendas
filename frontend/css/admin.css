@@ -711,3 +711,36 @@ td .btn {
         transition: none;
     }
 }
+
+/* Correção da navegação no celular */
+@media (max-width: 700px) {
+    #tela-painel > nav.admin-nav {
+        display: flex !important;
+        flex-direction: column !important;
+        flex-wrap: nowrap !important;
+        position: fixed !important;
+        top: 68px !important;
+        bottom: 0 !important;
+        left: 0 !important;
+        width: min(290px, 84vw) !important;
+        height: auto !important;
+        margin: 0 !important;
+        overflow-y: auto !important;
+        background: #fff8f3 !important;
+        z-index: 1000 !important;
+        transform: translateX(-110%) !important;
+        visibility: hidden !important;
+        transition: transform 0.22s ease, visibility 0.22s ease;
+    }
+
+    #tela-painel > nav.admin-nav.menu-aberto {
+        transform: translateX(0) !important;
+        visibility: visible !important;
+    }
+
+    #tela-painel > nav.admin-nav > button {
+        width: 100% !important;
+        min-height: 48px !important;
+        text-align: left !important;
+    }
+}
