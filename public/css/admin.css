@@ -312,31 +312,153 @@ select {
     }
 }
 
+
 @media print {
+    @page {
+        size: 80mm auto;
+        margin: 4mm;
+    }
+
     body {
-        background: white;
+        background: #fff !important;
+        color: #000 !important;
     }
 
     .topbar,
     .container,
-    .dialog-heading button,
+    .dialog-heading,
     .dialog-actions {
         display: none !important;
     }
 
-    .dialog {
-        position: static;
-        display: block;
-        width: 100%;
-        max-height: none;
-        border: 0;
-        overflow: visible;
+    #dialog-detalhes {
+        position: static !important;
+        display: block !important;
+        width: 100% !important;
+        max-width: none !important;
+        max-height: none !important;
+        height: auto !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        border: 0 !important;
+        border-radius: 0 !important;
+        box-shadow: none !important;
+        overflow: visible !important;
+        background: #fff !important;
+        color: #000 !important;
     }
 
-    .dialog::backdrop {
-        display: none;
+    #dialog-detalhes::backdrop {
+        display: none !important;
+    }
+
+    #detalhe-conteudo.comprovante {
+        width: 100% !important;
+        max-width: none !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        color: #000 !important;
+        font-family: Arial, sans-serif !important;
+        font-size: 11px !important;
+    }
+
+    .comprovante-cabecalho {
+        text-align: center;
+        padding-bottom: 10px;
+        margin-bottom: 12px;
+        border-bottom: 1px dashed #000;
+    }
+
+    .comprovante-marca {
+        margin: 0 0 4px;
+        font-size: 25px;
+        font-weight: 900;
+        letter-spacing: 2px;
+    }
+
+    .comprovante-subtitulo,
+    .comprovante-numero,
+    .comprovante-data {
+        margin: 4px 0;
+        font-size: 11px;
+    }
+
+    .comprovante-numero {
+        font-weight: bold;
+    }
+
+    .comprovante-secao {
+        margin-bottom: 12px !important;
+        padding-bottom: 8px;
+        border-bottom: 1px dashed #000;
+        break-inside: auto;
+    }
+
+    .comprovante-secao h3 {
+        margin: 0 0 7px;
+        font-size: 12px;
+        text-transform: uppercase;
+    }
+
+    .detalhe-linha {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 8px;
+        margin: 4px 0;
+        font-size: 10px;
+    }
+
+    .detalhe-linha span {
+        flex: 1;
+        min-width: 0;
+        overflow-wrap: anywhere;
+    }
+
+    .detalhe-linha strong {
+        max-width: 60%;
+        text-align: right;
+        overflow-wrap: anywhere;
+        white-space: normal;
+    }
+
+    .item-pedido {
+        margin: 8px 0;
+        padding: 0 0 8px;
+        border-bottom: 1px dotted #999;
+        break-inside: avoid;
+    }
+
+    .item-pedido > strong {
+        display: block;
+        margin-bottom: 5px;
+        font-size: 11px;
+        overflow-wrap: anywhere;
+    }
+
+    .item-pedido p {
+        margin: 5px 0;
+        font-size: 10px;
+        overflow-wrap: anywhere;
+    }
+
+    .comprovante-totais .detalhe-linha:last-child {
+        margin-top: 8px;
+        padding-top: 7px;
+        border-top: 1px solid #000;
+        font-size: 13px;
+        font-weight: bold;
+    }
+
+    .comprovante-rodape {
+        margin: 14px 0 0;
+        padding-top: 8px;
+        border-top: 1px dashed #000;
+        text-align: center;
+        font-weight: bold;
     }
 }
+
 
 /* ===== Painel: layout dos formulários e navegação ===== */
 

@@ -454,40 +454,111 @@ function adicionarItemPedido(item, destino) {
     destino.append(bloco);
 }
  
+
 async function abrirDetalhes(id) {
     $("#detalhe-titulo").textContent = `Pedido #${id}`;
- 
+
     const conteudo = $("#detalhe-conteudo");
+    conteudo.classList.add("comprovante");
     conteudo.replaceChildren(elemento("p", "", "Carregando detalhes..."));
- 
+
     if (!dialogDetalhes.open) dialogDetalhes.showModal();
- 
+
     try {
         const dados = await requisicao(`/pedidos/${id}`);
         const pedido = dados.pedido || dados;
- 
+
         conteudo.replaceChildren();
- 
-        const resumo = secaoDetalhe("Informações do pedido");
- 
-        resumo.append(
-            linhaDetalhe("Cliente", pedido.nome_cliente),
+
+        const cabecalho = elemento("header", "comprovante-cabecalho");
+        cabecalho.append(
+            elemento("h2", "comprovante-marca", "SALTY"),
+            elemento("p", "comprovante-subtitulo", "COMPROVANTE DO PEDIDO"),
+            elemento(
+                "p",
+                "comprovante-numero",
+                `Pedido nº ${pedido.numero || pedido.id || id}`
+            )
+        );
+
+        if (pedido.criado_em) {
+            cabecalho.append(
+                elemento("p", "comprovante-data", formatarDataHora(pedido.criado_em))
+            );
+        }
+
+        conteudo.append(cabecalho);
+
+        const cliente = secaoDetalhe("Dados do cliente");
+        cliente.classList.add("comprovante-secao");
+
+        cliente.append(
+            linhaDetalhe("Nome", pedido.nome_cliente),
             linhaDetalhe("Telefone", pedido.telefone_cliente),
-            linhaDetalhe("Modalidade", pedido.modalidade),
+            linhaDetalhe(
+                "Modalidade",
+                pedido.modalidade === "entrega" ? "Entrega" :
+                pedido.modalidade === "retirada" ? "Retirada" :
+                pedido.modalidade
+            ),
             linhaDetalhe(
                 "Status",
-                STATUS[String(pedido.status).toLowerCase()] || pedido.status
-            ),
-            linhaDetalhe("Subtotal", dinheiro(pedido.subtotal)),
-            linhaDetalhe("Entrega", dinheiro(pedido.taxa_entrega)),
-            linhaDetalhe("Desconto", dinheiro(pedido.desconto)),
-            linhaDetalhe("Total", dinheiro(pedido.total))
+                STATUS[String(pedido.status || "").toLowerCase()] || pedido.status
+            )
         );
- 
-        conteudo.append(resumo);
- 
+
+        if (pedido.modalidade === "entrega") {
+            const endereco = [
+                pedido.entrega_rua,
+                pedido.entrega_numero
+            ].filter(Boolean).join(", ");
+
+            const complemento = pedido.entrega_complemento;
+            const bairro = pedido.entrega_bairro;
+            const cidadeUF = [pedido.entrega_cidade, pedido.entrega_uf]
+                .filter(Boolean)
+                .join(" - ");
+
+            const cep = pedido.entrega_cep;
+            const referencia = pedido.entrega_referencia;
+
+            if (endereco) {
+                cliente.append(linhaDetalhe("Endereço", endereco));
+            }
+
+            if (complemento) {
+                cliente.append(linhaDetalhe("Complemento", complemento));
+            }
+
+            if (bairro) {
+                cliente.append(linhaDetalhe("Bairro", bairro));
+            }
+
+            if (cidadeUF) {
+                cliente.append(linhaDetalhe("Cidade/UF", cidadeUF));
+            }
+
+            if (cep) {
+                cliente.append(linhaDetalhe("CEP", cep));
+            }
+
+            if (referencia) {
+                cliente.append(linhaDetalhe("Referência", referencia));
+            }
+        }
+
+        if (pedido.observacoes) {
+            cliente.append(
+                elemento("p", "comprovante-observacoes",
+                    `Observações do pedido: ${pedido.observacoes}`)
+            );
+        }
+
+        conteudo.append(cliente);
+
         const itens = secaoDetalhe("Produtos");
- 
+        itens.classList.add("comprovante-secao");
+
         if (pedido.itens?.length) {
             for (const item of pedido.itens) {
                 adicionarItemPedido(item, itens);
@@ -495,37 +566,58 @@ async function abrirDetalhes(id) {
         } else {
             itens.append(elemento("p", "", "Nenhum item retornado."));
         }
- 
+
         conteudo.append(itens);
- 
+
+        const totais = secaoDetalhe("Resumo dos valores");
+        totais.classList.add("comprovante-secao", "comprovante-totais");
+
+        totais.append(
+            linhaDetalhe("Subtotal", dinheiro(pedido.subtotal)),
+            linhaDetalhe("Entrega", dinheiro(pedido.taxa_entrega)),
+            linhaDetalhe("Desconto", dinheiro(pedido.desconto)),
+            linhaDetalhe("TOTAL", dinheiro(pedido.total))
+        );
+
+        conteudo.append(totais);
+
         if (pedido.pagamentos?.length) {
             const pagamentos = secaoDetalhe("Pagamento");
- 
+            pagamentos.classList.add("comprovante-secao");
+
             for (const pagamento of pedido.pagamentos) {
                 const blocoPagamento = elemento("div", "item-pedido");
- 
+
                 blocoPagamento.append(
                     linhaDetalhe("Forma", formatarFormaPagamento(pagamento.forma)),
                     linhaDetalhe("Valor", dinheiro(pagamento.valor)),
                     linhaDetalhe("Status", pagamento.status)
                 );
- 
-                if (pagamento.troco_para) {
+
+                if (
+                    pagamento.troco_para !== null &&
+                    pagamento.troco_para !== undefined &&
+                    pagamento.troco_para !== ""
+                ) {
                     blocoPagamento.append(
                         linhaDetalhe("Troco para", dinheiro(pagamento.troco_para))
                     );
                 }
- 
+
                 pagamentos.append(blocoPagamento);
             }
- 
+
             conteudo.append(pagamentos);
         }
+
+        conteudo.append(
+            elemento("p", "comprovante-rodape", "Obrigado pela preferência!")
+        );
     } catch (erro) {
         conteudo.replaceChildren(elemento("p", "mensagem", erro.message));
     }
 }
- 
+
 /* =========================
    CATEGORIAS
 ========================= */
