@@ -412,6 +412,7 @@ def create_order():
 
     nome = str(dados.get("nome", "")).strip()
     telefone = str(dados.get("telefone", "")).strip()
+    email = str(dados.get("email", "")).strip().lower()
     modalidade = dados.get("modalidade")
     itens = dados.get("itens")
     pagamento = dados.get("pagamento")
@@ -439,6 +440,18 @@ def create_order():
         return jsonify({
             "error": "Escolha entrega ou retirada."
         }), 400
+    if pagamento == "pix":
+        if (
+            not email
+            or len(email) > 254
+            or email.count("@") != 1
+            or email.startswith("@")
+            or email.endswith("@")
+            or any(caractere.isspace() for caractere in email)
+        ):
+            return jsonify({
+                "error": "Informe um e-mail válido para pagar com Pix."
+            }), 400
 
     if pagamento not in (
         "pix",
@@ -940,6 +953,7 @@ def create_order():
                 cupom_id,
                 nome_cliente,
                 telefone_cliente,
+                email_cliente,
                 modalidade,
                 entrega_cep,
                 entrega_rua,
@@ -957,7 +971,7 @@ def create_order():
                 observacoes
             )
             VALUES (
-                %s, %s, %s, %s, %s, %s,
+                %s, %s, %s, %s, %s, %s, %s,
                 %s, %s, %s, %s, %s, %s, %s, %s,
                 'recebido', %s, %s, %s, %s, %s
             )
@@ -968,6 +982,7 @@ def create_order():
                 cupom["id"] if cupom else None,
                 nome,
                 telefone,
+                email or None,
                 modalidade,
                 endereco_salvo["entrega_cep"],
                 endereco_salvo["entrega_rua"],
