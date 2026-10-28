@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
@@ -9,11 +9,26 @@
     <script src="/js/admin.js" defer></script>
 </head>
 <body>
-    <header class="topbar">
-        <a class="logo" href="/">SALTY</a>
-        <span class="topbar-label">Painel administrativo</span>
-        <button id="btn-sair" class="btn btn-light" type="button" hidden>Sair</button>
-    </header>
+   
+<header class="topbar">
+    <button
+        id="btn-menu"
+        class="btn btn-light btn-menu"
+        type="button"
+        aria-label="Abrir menu de navegação"
+        aria-controls="menu-admin"
+        aria-expanded="false"
+        hidden
+    >☰</button>
+
+    <a class="logo" href="/">SALTY</a>
+    <span class="topbar-label">Painel administrativo</span>
+
+    <button id="btn-sair" class="btn btn-light" type="button" hidden>
+        Sair
+    </button>
+</header>
+<div id="fundo-menu-admin" class="fundo-menu-admin" hidden></div>
 
     <main class="container">
         <!-- LOGIN -->
@@ -38,7 +53,7 @@
 
         <!-- PAINEL ADMINISTRATIVO -->
         <section id="tela-painel" hidden>
-            <nav class="admin-nav" aria-label="Administração">
+                        <nav id="menu-admin" class="admin-nav" aria-label="Administração">
                 <button class="btn btn-primary aba-admin ativa" data-aba="pedidos" type="button">Pedidos</button>
                 <button class="btn btn-light aba-admin" data-aba="produtos" type="button">Produtos</button>
                 <button class="btn btn-light aba-admin" data-aba="categorias" type="button">Categorias</button>
@@ -167,26 +182,8 @@
                         >
                         <p class="mensagem">O preço promocional deve ser menor que o preço normal.</p>
 
-
-<label for="produto-imagem">URL da imagem</label>
-<input id="produto-imagem" type="url" maxlength="255" placeholder="Cole uma URL ou envie uma imagem">
-
-<label for="produto-imagem-arquivo">Enviar imagem do dispositivo</label>
-<input
-    id="produto-imagem-arquivo"
-    type="file"
-    accept="image/jpeg,image/png,image/webp,image/avif"
->
-<p class="mensagem">Formatos aceitos: JPG, PNG, WEBP e AVIF. Tamanho máximo: 10 MB.</p>
-
-<div id="produto-imagem-status" class="mensagem" role="status" aria-live="polite"></div>
-<img
-    id="produto-imagem-preview"
-    alt="Prévia da imagem do produto"
-    hidden
-    style="max-width: 220px; max-height: 180px; object-fit: contain; margin-top: 10px;"
->
-
+                        <label for="produto-imagem">URL da imagem</label>
+                        <input id="produto-imagem" type="url" maxlength="255">
 
                         <label for="produto-preparo">Tempo de preparo (minutos)</label>
                         <input id="produto-preparo" type="number" min="0" max="65535">
@@ -584,5 +581,4 @@
     </dialog>
 </body>
 </html>
-
 
