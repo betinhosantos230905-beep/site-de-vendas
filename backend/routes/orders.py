@@ -8,6 +8,7 @@ from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
 
 from flask import Blueprint, jsonify, request
 from backend.database import get_connection
+from backend.routes.funcionamento import obter_situacao
 
 orders_bp = Blueprint("orders", __name__)
 
@@ -541,10 +542,8 @@ def create_order():
 
         config = obter_configuracoes(cursor)
 
-        aberta = (
-            str(config.get("aberta", "false")).lower()
-            == "true"
-        )
+        situacao_loja = obter_situacao(cursor)
+        aberta = situacao_loja["aberta"]
 
         aceita_fechada = (
             str(
