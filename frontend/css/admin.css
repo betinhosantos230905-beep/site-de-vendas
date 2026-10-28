@@ -477,3 +477,237 @@ td .btn {
         grid-template-columns: 1fr;
     }
 }
+
+
+/* =========================================
+   MENU LATERAL RESPONSIVO — SALTY
+========================================= */
+
+.topbar {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    min-height: 68px;
+}
+
+.btn-menu {
+    display: none;
+    min-width: 44px;
+    min-height: 44px;
+    padding: 8px 12px;
+    font-size: 22px;
+}
+
+.fundo-menu-admin[hidden] {
+    display: none !important;
+}
+
+.fundo-menu-admin {
+    position: fixed;
+    inset: 68px 0 0;
+    z-index: 80;
+    background: rgb(65 36 22 / 35%);
+}
+
+#tela-painel {
+    position: relative;
+}
+
+@media (min-width: 701px) {
+    #tela-painel {
+        display: grid;
+        grid-template-columns: 210px minmax(0, 1fr);
+        column-gap: 24px;
+        align-items: start;
+    }
+
+    #tela-painel > .admin-nav {
+        position: sticky;
+        top: 88px;
+        display: flex;
+        flex-direction: column;
+        flex-wrap: nowrap;
+        gap: 8px;
+        margin: 0;
+        padding: 14px;
+        background: #fff;
+        border: 1px solid var(--borda);
+        border-radius: var(--raio);
+    }
+
+    #tela-painel > .admin-nav .aba-admin {
+        width: 100%;
+        min-height: 44px;
+        text-align: left;
+    }
+
+    #tela-painel > #mensagem-painel,
+    #tela-painel > .secao-admin {
+        grid-column: 2;
+        min-width: 0;
+    }
+}
+
+@media (max-width: 700px) {
+    .topbar {
+        gap: 10px;
+        padding: 10px 4%;
+    }
+
+    .btn-menu:not([hidden]) {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+    }
+
+    .logo {
+        font-size: 23px;
+    }
+
+    .topbar-label {
+        font-size: 12px;
+        line-height: 1.3;
+    }
+
+    #btn-sair {
+        padding: 9px 11px;
+        flex-shrink: 0;
+    }
+
+    #tela-painel > .admin-nav {
+        position: fixed;
+        top: 68px;
+        bottom: 0;
+        left: 0;
+        z-index: 90;
+        width: min(290px, 84vw);
+        overflow-y: auto;
+        display: flex;
+        flex-direction: column;
+        flex-wrap: nowrap;
+        gap: 8px;
+        margin: 0;
+        padding: 20px 14px;
+        background: #fff8f3;
+        border-right: 1px solid var(--borda);
+        box-shadow: 8px 0 28px rgb(65 36 22 / 10%);
+        transform: translateX(-105%);
+        visibility: hidden;
+        transition:
+            transform 0.22s ease,
+            visibility 0.22s ease;
+    }
+
+    #tela-painel > .admin-nav.menu-aberto {
+        transform: translateX(0);
+        visibility: visible;
+    }
+
+    #tela-painel > .admin-nav .aba-admin {
+        width: 100%;
+        min-height: 48px;
+        padding: 13px 14px;
+        text-align: left;
+    }
+
+    .fundo-menu-admin:not([hidden]) {
+        display: block;
+    }
+
+    .container {
+        width: 92%;
+        margin: 20px auto;
+    }
+
+    .resumo {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 10px;
+    }
+
+    .resumo-card {
+        gap: 8px;
+        padding: 14px;
+    }
+
+    .resumo-card strong {
+        font-size: 22px;
+        overflow-wrap: anywhere;
+    }
+
+    .lista-card {
+        padding: 14px;
+    }
+
+    .filtros-admin {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .filtros-admin > div,
+    .filtros-admin input,
+    .filtros-admin select {
+        width: 100%;
+        max-width: none;
+    }
+
+    .admin-actions,
+    .acoes-loja {
+        flex-direction: column;
+    }
+
+    .admin-actions .btn,
+    .acoes-loja .btn {
+        width: 100%;
+        min-height: 44px;
+    }
+
+    .dia-funcionamento {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .periodos-dia {
+        gap: 12px;
+    }
+
+    .periodo {
+        flex-wrap: wrap;
+    }
+
+    .periodo input[type="time"] {
+        max-width: 100%;
+    }
+
+    .dialog {
+        width: 94%;
+        max-width: 94%;
+        max-height: 88vh;
+        padding: 18px;
+    }
+
+    .detalhe-linha {
+        align-items: flex-start;
+        flex-wrap: wrap;
+        gap: 5px 12px;
+    }
+
+    .detalhe-linha strong {
+        overflow-wrap: anywhere;
+        text-align: right;
+    }
+}
+
+@media (max-width: 380px) {
+    .topbar-label {
+        display: none;
+    }
+
+    .resumo {
+        grid-template-columns: minmax(0, 1fr);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    #tela-painel > .admin-nav {
+        transition: none;
+    }
+}

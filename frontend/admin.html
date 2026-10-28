@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
@@ -9,11 +9,26 @@
     <script src="/js/admin.js" defer></script>
 </head>
 <body>
-    <header class="topbar">
-        <a class="logo" href="/">SALTY</a>
-        <span class="topbar-label">Painel administrativo</span>
-        <button id="btn-sair" class="btn btn-light" type="button" hidden>Sair</button>
-    </header>
+   
+<header class="topbar">
+    <button
+        id="btn-menu"
+        class="btn btn-light btn-menu"
+        type="button"
+        aria-label="Abrir menu de navegação"
+        aria-controls="menu-admin"
+        aria-expanded="false"
+        hidden
+    >☰</button>
+
+    <a class="logo" href="/">SALTY</a>
+    <span class="topbar-label">Painel administrativo</span>
+
+    <button id="btn-sair" class="btn btn-light" type="button" hidden>
+        Sair
+    </button>
+</header>
+<div id="fundo-menu-admin" class="fundo-menu-admin" hidden></div>
 
     <main class="container">
         <!-- LOGIN -->

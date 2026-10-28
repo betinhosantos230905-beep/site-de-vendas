@@ -84,23 +84,81 @@ async function requisicao(caminho, opcoes = {}) {
     return dados;
 }
  
+
 function mostrarPainel() {
     telaLogin.hidden = true;
     telaPainel.hidden = false;
     botaoSair.hidden = false;
+
+    const botaoMenu = $("#btn-menu");
+    if (botaoMenu) botaoMenu.hidden = false;
+
+    fecharMenuAdmin();
 }
- 
+
 function mostrarLogin() {
     telaLogin.hidden = false;
     telaPainel.hidden = true;
     botaoSair.hidden = true;
+
+    const botaoMenu = $("#btn-menu");
+    if (botaoMenu) botaoMenu.hidden = true;
+
+    fecharMenuAdmin();
 }
- 
+
 function mostrarMensagem(texto, erro = false) {
     mensagemPainel.textContent = texto;
     mensagemPainel.classList.toggle("erro", erro);
 }
+
+function abrirMenuAdmin() {
+    const menu = $(".admin-nav");
+    const botaoMenu = $("#btn-menu");
+    const fundo = $("#fundo-menu-admin");
+
+    if (!menu || !botaoMenu || !fundo) return;
+
+    menu.classList.add("menu-aberto");
+    fundo.hidden = false;
+    botaoMenu.setAttribute("aria-expanded", "true");
+    botaoMenu.setAttribute("aria-label", "Fechar menu de navegação");
+}
+
+function fecharMenuAdmin() {
+    const menu = $(".admin-nav");
+    const botaoMenu = $("#btn-menu");
+    const fundo = $("#fundo-menu-admin");
+
+    if (menu) menu.classList.remove("menu-aberto");
+    if (fundo) fundo.hidden = true;
+
+    if (botaoMenu) {
+        botaoMenu.setAttribute("aria-expanded", "false");
+        botaoMenu.setAttribute("aria-label", "Abrir menu de navegação");
+    }
+}
+
+$("#btn-menu")?.addEventListener("click", () => {
+    const menu = $(".admin-nav");
+
+    if (menu?.classList.contains("menu-aberto")) {
+        fecharMenuAdmin();
+    } else {
+        abrirMenuAdmin();
+    }
+});
+
+$("#fundo-menu-admin")?.addEventListener("click", fecharMenuAdmin);
+
+document.addEventListener("keydown", (evento) => {
+    if (evento.key === "Escape") {
+        fecharMenuAdmin();
+    }
+});
+
  
+
 /* =========================
    NAVEGAÇÃO ENTRE ABAS
 ========================= */
@@ -139,6 +197,8 @@ function alternarAba(nome) {
     if (nome === "clientes") carregarClientes();
     if (nome === "configuracoes") carregarConfiguracoes();
     if (nome === "faturamento") carregarFaturamento();
+
+    fecharMenuAdmin();
 }
  
 document.querySelectorAll(".aba-admin").forEach((botao) => {
