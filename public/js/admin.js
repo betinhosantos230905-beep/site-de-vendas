@@ -354,58 +354,67 @@ function renderizarPedidos() {
             elemento("td", "", dinheiro(pedido.total))
         );
  
+
         const celulaStatus = elemento("td");
         const seletor = document.createElement("select");
- 
+        const statusOriginal = String(pedido.status || "").toLowerCase();
+
         for (const [valor, nome] of Object.entries(STATUS)) {
             const opcao = document.createElement("option");
             opcao.value = valor;
             opcao.textContent = nome;
-            opcao.selected =
-                String(pedido.status || "").toLowerCase() === valor;
- 
+            opcao.selected = statusOriginal === valor;
             seletor.append(opcao);
         }
- 
+
+        const botaoSalvar = elemento("button", "btn btn-primary", "Salvar");
+        botaoSalvar.type = "button";
+        botaoSalvar.disabled = true;
+        botaoSalvar.style.marginTop = "6px";
+
         seletor.addEventListener("change", () => {
-            alterarStatus(pedido.id, seletor.value, seletor);
+            botaoSalvar.disabled = seletor.value === statusOriginal;
         });
- 
-        celulaStatus.append(seletor);
- 
+
+        botaoSalvar.addEventListener("click", async () => {
+            if (seletor.value === statusOriginal) return;
+
+            const novoStatus = seletor.value;
+            botaoSalvar.disabled = true;
+            seletor.disabled = true;
+            botaoSalvar.textContent = "Salvando...";
+
+            try {
+                await requisicao(`/pedidos/${pedido.id}/status`, {
+                    method: "PATCH",
+                    body: JSON.stringify({ status: novoStatus })
+                });
+
+                mostrarMensagem("Status atualizado com sucesso.");
+                await carregarPedidos();
+            } catch (erro) {
+                mostrarMensagem(erro.message, true);
+                botaoSalvar.textContent = "Tentar novamente";
+                botaoSalvar.disabled = false;
+                seletor.disabled = false;
+            }
+        });
+
+        celulaStatus.append(seletor, document.createElement("br"), botaoSalvar);
+
         const celulaAcoes = elemento("td");
         const botaoDetalhes = elemento("button", "btn btn-light", "Detalhes");
         botaoDetalhes.type = "button";
         botaoDetalhes.addEventListener("click", () => {
             abrirDetalhes(pedido.id);
         });
- 
+
         celulaAcoes.append(botaoDetalhes);
         linha.append(celulaStatus, celulaAcoes);
         listaPedidos.append(linha);
     }
 }
- 
-async function alterarStatus(id, status, seletor) {
-    seletor.disabled = true;
-    mostrarMensagem("Atualizando status...");
- 
-    try {
-        await requisicao(`/pedidos/${id}/status`, {
-            method: "PATCH",
-            body: JSON.stringify({ status })
-        });
- 
-        mostrarMensagem("Status atualizado.");
-        await carregarPedidos();
-    } catch (erro) {
-        mostrarMensagem(erro.message, true);
-        await carregarPedidos();
-    } finally {
-        seletor.disabled = false;
-    }
-}
- 
+
 function linhaDetalhe(rotulo, valor) {
     const linha = elemento("div", "detalhe-linha");
  
