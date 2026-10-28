@@ -1821,3 +1821,30 @@ textarea {
     gap: 8px;
   }
 }
+
+/* Correção do carrinho em telas pequenas */
+@media (max-width: 719px) {
+  #cart-dialog {
+    width: 100%;
+    max-width: 560px;
+    height: 92dvh;
+    max-height: 92dvh;
+    min-height: 0;
+    margin: auto 0 0;
+    overflow: hidden;
+  }
+
+  #cart-dialog .sheet-head,
+  #cart-dialog .sheet-foot {
+    flex-shrink: 0;
+  }
+
+  #cart-dialog .sheet-body {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-y: contain;
+  }
+}
