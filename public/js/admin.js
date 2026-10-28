@@ -2190,66 +2190,78 @@ async function carregarFaturamento() {
     }
 }
  
+
 function renderizarFaturamento(dados) {
     const lista = $("#lista-faturamento");
     if (!lista) return;
- 
+
     lista.replaceChildren();
- 
-    const total = Number(dados.total || 0);
-    const quantidade = Number(dados.quantidade || 0);
-    const ticketMedio = Number(
-        dados.ticket_medio ??
-        (quantidade > 0 ? total / quantidade : 0)
+
+    const filtroForma = $("#filtro-forma-faturamento");
+    const formaSelecionada = filtroForma?.value || "todos";
+
+    const pagamentosFiltrados = pagamentosFaturamento.filter((pagamento) => {
+        if (formaSelecionada === "todos") return true;
+
+        return String(pagamento.forma || "").toLowerCase() === formaSelecionada;
+    });
+
+    const total = pagamentosFiltrados.reduce(
+        (soma, pagamento) => soma + Number(pagamento.valor || 0),
+        0
     );
- 
+
+    const quantidade = pagamentosFiltrados.length;
+    const ticketMedio = quantidade > 0 ? total / quantidade : 0;
+
     if ($("#faturamento-total")) {
         $("#faturamento-total").textContent = dinheiro(total);
     }
- 
+
     if ($("#faturamento-quantidade")) {
         $("#faturamento-quantidade").textContent =
             quantidade.toLocaleString("pt-BR");
     }
- 
+
     if ($("#faturamento-ticket-medio")) {
         $("#faturamento-ticket-medio").textContent = dinheiro(ticketMedio);
     }
- 
-    if (!pagamentosFaturamento.length) {
+
+    if (!pagamentosFiltrados.length) {
         const linha = elemento("tr");
         const celula = elemento(
             "td",
             "",
-            "Nenhum pagamento confirmado encontrado neste período."
+            "Nenhum pagamento encontrado para este filtro."
         );
+
         celula.colSpan = 6;
         linha.append(celula);
         lista.append(linha);
         return;
     }
- 
-    for (const pagamento of pagamentosFaturamento) {
+
+    for (const pagamento of pagamentosFiltrados) {
         const linha = elemento("tr");
- 
+
         const numeroPedido =
             pagamento.numero_pedido ??
             pagamento.numero ??
             pagamento.pedido_id ??
             "—";
- 
+
         const dataPagamento = pagamento.pago_em
             ? formatarDataHora(pagamento.pago_em)
             : "—";
- 
+
         const forma = formatarFormaPagamento(pagamento.forma);
         const valor = dinheiro(pagamento.valor);
- 
+
         const status =
             String(pagamento.status || "").toLowerCase() === "pago"
                 ? "Pago"
                 : (pagamento.status || "—");
- 
+
         linha.append(
             elemento("td", "", `#${numeroPedido}`),
             elemento("td", "", pagamento.nome_cliente || "Cliente"),
@@ -2258,10 +2270,11 @@ function renderizarFaturamento(dados) {
             elemento("td", "", dataPagamento),
             elemento("td", "", status)
         );
- 
+
         lista.append(linha);
     }
 }
+
  
 function formatarFormaPagamento(forma) {
     const formas = {
@@ -2284,6 +2297,10 @@ $("#filtro-periodo-faturamento")?.addEventListener("change", () => {
     if ($("#filtro-periodo-faturamento").value !== "personalizado") {
         carregarFaturamento();
     }
+});
+
+$("#filtro-forma-faturamento")?.addEventListener("change", () => {
+    renderizarFaturamento();
 });
  
 $("#btn-aplicar-filtro-faturamento")?.addEventListener("click", () => {
