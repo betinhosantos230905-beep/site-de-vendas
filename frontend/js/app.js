@@ -1,4 +1,4 @@
-/* CardÃ¡pio, detalhes do produto, carrinho, cupons e checkout. */
+/* Cardápio, detalhes do produto, carrinho, cupons e checkout. */
 
 const brl = n => Number(n).toLocaleString("pt-BR", {
   style: "currency",
@@ -112,7 +112,7 @@ function textoDescontoCupom(cupom) {
     return `${brl(valor)} de desconto`;
   }
 
-  return "Consulte as condiÃ§Ãµes do cupom";
+  return "Consulte as condições do cupom";
 }
 
 function formatarValidadeCupom(data) {
@@ -122,12 +122,12 @@ function formatarValidadeCupom(data) {
   const correspondencia = texto.match(/^(\d{4})-(\d{2})-(\d{2})/);
 
   if (!correspondencia) {
-    return `VÃ¡lido atÃ© ${texto}`;
+    return `Válido até ${texto}`;
   }
 
   const [, ano, mes, dia] = correspondencia;
 
-  return `VÃ¡lido atÃ© ${dia}/${mes}/${ano}`;
+  return `Válido até ${dia}/${mes}/${ano}`;
 }
 
 /*
@@ -142,7 +142,7 @@ function criarSecaoCupons() {
   secao = h("section", {
     id: "coupons-section",
     class: "coupons-section",
-    "aria-label": "Cupons disponÃ­veis",
+    "aria-label": "Cupons disponíveis",
   });
 
   const lista = h("div", {
@@ -170,14 +170,14 @@ function criarSecaoCupons() {
     }, "%"),
 
     h("span", { class: "coupons-toggle-text" },
-      h("strong", {}, "Cupons disponÃ­veis"),
+      h("strong", {}, "Cupons disponíveis"),
       h("small", {}, "Toque para conferir seus descontos")
     ),
 
     h("span", {
       class: "coupons-toggle-arrow",
       "aria-hidden": "true",
-    }, "âŒ„")
+    }, "⌄")
   );
 
   secao.append(abrir, lista);
@@ -265,7 +265,7 @@ function renderCoupons() {
 
           minimo > 0
             ? h("p", { class: "coupon-detail" },
-                `Pedido mÃ­nimo: ${brl(minimo)}`
+                `Pedido mínimo: ${brl(minimo)}`
               )
             : null,
 
@@ -288,7 +288,7 @@ async function carregarCupons() {
 
     renderCoupons();
   } catch (erro) {
-    console.warn("NÃ£o foi possÃ­vel carregar os cupons:", erro);
+    console.warn("Não foi possível carregar os cupons:", erro);
 
     state.coupons = [];
 
@@ -305,20 +305,20 @@ async function carregarTaxaEntrega() {
     const taxa = Number(dados?.taxa_entrega_padrao);
 
     if (!Number.isFinite(taxa) || taxa < 0) {
-      throw new Error("A taxa de entrega retornada Ã© invÃ¡lida.");
+      throw new Error("A taxa de entrega retornada é inválida.");
     }
 
     state.deliveryFee = taxa;
   } catch (erro) {
     console.warn(
-      "NÃ£o foi possÃ­vel carregar a taxa de entrega. SerÃ¡ usado o valor padrÃ£o de R$ 7,00:",
+      "Não foi possível carregar a taxa de entrega. Será usado o valor padrão de R$ 7,00:",
       erro
     );
   }
 }
 
 
-/* ---------- RegiÃµes de entrega ---------- */
+/* ---------- Regiões de entrega ---------- */
 
 async function carregarRegioesEntrega() {
   try {
@@ -327,7 +327,7 @@ async function carregarRegioesEntrega() {
 
     if (!Array.isArray(dados)) {
       throw new Error(
-        "A lista de regiÃµes de entrega retornada Ã© invÃ¡lida."
+        "A lista de regiões de entrega retornada é inválida."
       );
     }
 
@@ -346,7 +346,7 @@ async function carregarRegioesEntrega() {
     state.deliveryRegionsLoaded = false;
 
     console.error(
-      "NÃ£o foi possÃ­vel carregar as regiÃµes de entrega:",
+      "Não foi possível carregar as regiões de entrega:",
       erro
     );
 
@@ -394,7 +394,7 @@ async function aplicarCupom() {
   const subtotal = SaltyCart.subtotal();
 
   if (!codigo) {
-    limparCupom("Digite o cÃ³digo do cupom.");
+    limparCupom("Digite o código do cupom.");
     renderCart();
     return;
   }
@@ -442,7 +442,7 @@ async function aplicarCupom() {
       limparCupom(
         dados?.error ||
         dados?.mensagem ||
-        "Este cupom nÃ£o Ã© vÃ¡lido para o seu pedido."
+        "Este cupom não é válido para o seu pedido."
       );
 
       renderCart();
@@ -452,7 +452,7 @@ async function aplicarCupom() {
     const desconto = obterDesconto(resposta);
 
     if (!Number.isFinite(desconto) || desconto <= 0) {
-      limparCupom("O servidor nÃ£o retornou um desconto vÃ¡lido.");
+      limparCupom("O servidor não retornou um desconto válido.");
       renderCart();
       return;
     }
@@ -468,7 +468,7 @@ async function aplicarCupom() {
     };
 
     state.couponMessage =
-      `Cupom aplicado! VocÃª economiza ${brl(state.appliedCoupon.desconto)}.`;
+      `Cupom aplicado! Você economiza ${brl(state.appliedCoupon.desconto)}.`;
 
     renderCart();
 
@@ -477,7 +477,7 @@ async function aplicarCupom() {
     if (requisicaoAtual !== state.couponRequestId) return;
 
     limparCupom(
-      erro.message || "NÃ£o foi possÃ­vel validar o cupom."
+      erro.message || "Não foi possível validar o cupom."
     );
 
     renderCart();
@@ -583,11 +583,11 @@ function productCard(p, cat) {
           : null,
 
         promocional !== null
-          ? h("span", { class: "tag" }, "PromoÃ§Ã£o")
+          ? h("span", { class: "tag" }, "Promoção")
           : null,
 
         !p.available
-          ? h("span", { class: "tag off" }, "IndisponÃ­vel")
+          ? h("span", { class: "tag off" }, "Indisponível")
           : null
       )
     )
@@ -626,7 +626,7 @@ function renderMenu() {
   );
 }
 
-/* ---------- Detalhes e personalizaÃ§Ã£o ---------- */
+/* ---------- Detalhes e personalização ---------- */
 
 function openProduct(p) {
   const dlg = $("product-dialog");
@@ -715,10 +715,10 @@ function openProduct(p) {
     const rule = g.min > 0
       ? (
           single
-            ? "ObrigatÃ³rio: escolha 1"
-            : `ObrigatÃ³rio: escolha de ${g.min} a ${g.max}`
+            ? "Obrigatório: escolha 1"
+            : `Obrigatório: escolha de ${g.min} a ${g.max}`
         )
-      : `Opcional: atÃ© ${g.max}`;
+      : `Opcional: até ${g.max}`;
 
     const fs = h("fieldset", { class: "group" },
       h("legend", {}, g.name),
@@ -811,14 +811,14 @@ function openProduct(p) {
         type: "button",
         "aria-label": "Fechar",
         onclick: () => dlg.close(),
-      }, "Ã—")
+      }, "×")
     ),
 
     h("div", { class: "sheet-body" },
       ...groups,
 
       h("label", { class: "lbl", for: "pd-note" },
-        "ObservaÃ§Ãµes"
+        "Observações"
       ),
 
       note
@@ -834,7 +834,7 @@ function openProduct(p) {
           type: "button",
           "aria-label": "Diminuir",
           onclick: step(-1),
-        }, "âˆ’"),
+        }, "−"),
 
         qtyOut,
 
@@ -889,7 +889,7 @@ function renderCart() {
       type: "button",
       "aria-label": "Fechar carrinho",
       onclick: () => dlg.close(),
-    }, "Ã—")
+    }, "×")
   );
 
   if (!items.length) {
@@ -900,7 +900,7 @@ function renderCart() {
 
       h("div", { class: "sheet-body" },
         h("p", { class: "state" },
-          "Seu carrinho estÃ¡ vazio. Escolha algo no cardÃ¡pio."
+          "Seu carrinho está vazio. Escolha algo no cardápio."
         )
       ),
 
@@ -909,7 +909,7 @@ function renderCart() {
           class: "btn",
           type: "button",
           onclick: () => dlg.close(),
-        }, "Voltar ao cardÃ¡pio")
+        }, "Voltar ao cardápio")
       )
     );
 
@@ -944,7 +944,7 @@ function renderCart() {
             type: "button",
             "aria-label": `Diminuir ${i.name}`,
             onclick: () => SaltyCart.setQty(i.key, i.qty - 1),
-          }, "âˆ’"),
+          }, "−"),
 
           h("output", {}, i.qty),
 
@@ -967,7 +967,7 @@ function renderCart() {
   const campoCupom = h("input", {
     id: "coupon-code",
     type: "text",
-    placeholder: "Digite o cÃ³digo do cupom",
+    placeholder: "Digite o código do cupom",
     autocomplete: "off",
     maxlength: "80",
     value: state.appliedCoupon?.codigo || "",
@@ -975,7 +975,7 @@ function renderCart() {
 
   campoCupom.addEventListener("input", () => {
     if (state.appliedCoupon) {
-      limparCupom("O cÃ³digo mudou. Aplique o cupom novamente.");
+      limparCupom("O código mudou. Aplique o cupom novamente.");
     }
 
     campoCupom.value = campoCupom.value.toUpperCase();
@@ -1029,7 +1029,7 @@ function renderCart() {
     state.appliedCoupon
       ? h("div", { class: "coupon-total" },
           h("span", {}, `Cupom ${state.appliedCoupon.codigo}`),
-          h("span", {}, `âˆ’ ${brl(desconto)}`)
+          h("span", {}, `− ${brl(desconto)}`)
         )
       : null,
 
@@ -1057,11 +1057,11 @@ function renderCart() {
         h("h4", {}, "Tem um cupom de desconto?"),
 
         h("p", { class: "hint" },
-          "Informe o cÃ³digo e o telefone usado no pedido."
+          "Informe o código e o telefone usado no pedido."
         ),
 
         h("label", { class: "lbl", for: "coupon-code" },
-          "CÃ³digo do cupom",
+          "Código do cupom",
           campoCupom
         ),
 
@@ -1077,7 +1077,7 @@ function renderCart() {
       totais,
 
       h("p", { class: "hint" },
-        "O total exibido considera a taxa de entrega padrÃ£o. A taxa e o desconto serÃ£o conferidos pelo servidor ao registrar o pedido."
+        "O total exibido considera a taxa de entrega padrão. A taxa e o desconto serão conferidos pelo servidor ao registrar o pedido."
       )
     ),
 
@@ -1086,7 +1086,7 @@ function renderCart() {
         class: "btn ghost",
         type: "button",
         onclick: () => dlg.close(),
-      }, "Voltar ao cardÃ¡pio"),
+      }, "Voltar ao cardápio"),
 
       h("button", {
         class: "btn",
@@ -1198,7 +1198,7 @@ if (state.deliveryRegions.length === 0) {
 
   const cep = criarCampoCheckout("checkout-cep", "CEP");
   const rua = criarCampoCheckout("checkout-rua", "Rua");
-  const numero = criarCampoCheckout("checkout-numero", "NÃºmero");
+  const numero = criarCampoCheckout("checkout-numero", "Número");
 
   const complemento = criarCampoCheckout(
     "checkout-complemento", "Complemento (opcional)", "text", false
@@ -1281,14 +1281,14 @@ bairroSelect.addEventListener("change", () => {
   const uf = criarCampoCheckout("checkout-uf", "Estado (UF)");
 
   const referencia = criarCampoCheckout(
-    "checkout-referencia", "Ponto de referÃªncia (opcional)", "text", false
+    "checkout-referencia", "Ponto de referência (opcional)", "text", false
   );
 
   uf.input.maxLength = 2;
   uf.input.autocomplete = "address-level1";
 
   const endereco = h("div", { class: "checkout-address" },
-    h("h4", {}, "EndereÃ§o de entrega"),
+    h("h4", {}, "Endereço de entrega"),
     cep.label,
     rua.label,
     numero.label,
@@ -1306,7 +1306,7 @@ bairroSelect.addEventListener("change", () => {
   },
     h("option", { value: "pix" }, "Pix"),
     h("option", { value: "dinheiro" }, "Dinheiro"),
-    h("option", { value: "cartao_entrega" }, "CartÃ£o na entrega")
+    h("option", { value: "cartao_entrega" }, "Cartão na entrega")
   );
 
   const pagamentoLabel = h("label", {
@@ -1325,13 +1325,13 @@ bairroSelect.addEventListener("change", () => {
     id: "checkout-observacoes",
     name: "observacoes",
     maxlength: "300",
-    placeholder: "Alguma observaÃ§Ã£o para o pedido?",
+    placeholder: "Alguma observação para o pedido?",
   });
 
   const observacoesLabel = h("label", {
     class: "lbl",
     for: "checkout-observacoes",
-  }, "ObservaÃ§Ãµes", observacoes);
+  }, "Observações", observacoes);
 
   const mensagem = h("p", {
     class: "hint",
@@ -1461,7 +1461,7 @@ bairroSelect.addEventListener("change", () => {
 
         if (!pedido || !pedido.numero) {
           throw new Error(
-            "O servidor nÃ£o retornou a confirmaÃ§Ã£o do pedido."
+            "O servidor não retornou a confirmação do pedido."
           );
         }
 
@@ -1480,14 +1480,14 @@ bairroSelect.addEventListener("change", () => {
               type: "button",
               "aria-label": "Fechar",
               onclick: () => dlg.close(),
-            }, "Ã—")
+            }, "×")
           ),
 
           h("div", { class: "sheet-body" },
             h("p", {}, "Seu pedido foi registrado com sucesso."),
-            h("p", {}, `NÃºmero do pedido: ${pedido.numero}`),
+            h("p", {}, `Número do pedido: ${pedido.numero}`),
             h("p", {}, `Total: ${brl(pedido.total)}`),
-            h("p", {}, "VocÃª pode consultar o andamento do seu pedido pelo botÃ£o Consultar no topo do cardÃ¡pio.")
+            h("p", {}, "Você pode consultar o andamento do seu pedido pelo botão Consultar no topo do cardápio.")
           ),
 
           h("div", { class: "sheet-foot" },
@@ -1495,7 +1495,7 @@ bairroSelect.addEventListener("change", () => {
               class: "btn",
               type: "button",
               onclick: () => dlg.close(),
-            }, "Voltar ao cardÃ¡pio")
+            }, "Voltar ao cardápio")
           )
         );
 
@@ -1503,7 +1503,7 @@ bairroSelect.addEventListener("change", () => {
       } catch (erro) {
         mensagem.textContent =
           erro.message ||
-          "NÃ£o foi possÃ­vel registrar o pedido. Tente novamente.";
+          "Não foi possível registrar o pedido. Tente novamente.";
 
         enviar.disabled = false;
         enviar.textContent = "Tentar novamente";
@@ -1528,7 +1528,7 @@ bairroSelect.addEventListener("change", () => {
       state.appliedCoupon
         ? h("div", { class: "coupon-total" },
             h("span", {}, `Cupom ${state.appliedCoupon.codigo}`),
-            h("strong", {}, `âˆ’ ${brl(descontoCheckout)}`)
+            h("strong", {}, `− ${brl(descontoCheckout)}`)
           )
         : null,
 
@@ -1590,7 +1590,7 @@ bairroSelect.addEventListener("change", () => {
         type: "button",
         "aria-label": "Fechar checkout",
         onclick: () => dlg.close(),
-      }, "Ã—")
+      }, "×")
     ),
 
     formulario
@@ -1623,7 +1623,7 @@ function abrirAcompanhamentoPedido(numeroInicial = "", telefoneInicial = "") {
     required: true,
     maxlength: "80",
     autocomplete: "off",
-    placeholder: "NÃºmero do pedido",
+    placeholder: "Número do pedido",
     value: numeroInicial,
   });
 
@@ -1663,7 +1663,7 @@ function abrirAcompanhamentoPedido(numeroInicial = "", telefoneInicial = "") {
       const telefoneCliente = telefone.value.trim();
 
       if (!numeroPedido || !telefoneCliente) {
-        mensagem.textContent = "Informe o nÃºmero do pedido e o telefone.";
+        mensagem.textContent = "Informe o número do pedido e o telefone.";
         return;
       }
 
@@ -1681,7 +1681,7 @@ function abrirAcompanhamentoPedido(numeroInicial = "", telefoneInicial = "") {
         const pedido = resposta?.pedido || resposta?.data || resposta;
 
         if (!pedido || !pedido.status) {
-          throw new Error("NÃ£o foi possÃ­vel localizar o pedido.");
+          throw new Error("Não foi possível localizar o pedido.");
         }
 
         const statusLabels = {
@@ -1723,28 +1723,28 @@ function abrirAcompanhamentoPedido(numeroInicial = "", telefoneInicial = "") {
               )
             : "",
 
-          h("h4", {}, "HistÃ³rico do pedido"),
+          h("h4", {}, "Histórico do pedido"),
 
           historico.length
             ? h("ul", {},
                 historico.map(item =>
                   h("li", {},
-                    statusLabels[item.status] || item.status || "AtualizaÃ§Ã£o",
+                    statusLabels[item.status] || item.status || "Atualização",
                     item.criado_em || item.data
-                      ? ` â€” ${item.criado_em || item.data}`
+                      ? ` — ${item.criado_em || item.data}`
                       : ""
                   )
                 )
               )
             : h("p", {},
-                "Ainda nÃ£o hÃ¡ atualizaÃ§Ãµes no histÃ³rico."
+                "Ainda não há atualizações no histórico."
               )
         );
 
         mensagem.textContent = "Consulta realizada com sucesso.";
       } catch (erro) {
         mensagem.textContent =
-          erro.message || "NÃ£o foi possÃ­vel consultar o pedido.";
+          erro.message || "Não foi possível consultar o pedido.";
       } finally {
         consultar.disabled = false;
         consultar.textContent = "Consultar pedido";
@@ -1754,7 +1754,7 @@ function abrirAcompanhamentoPedido(numeroInicial = "", telefoneInicial = "") {
     h("label", {
       class: "lbl",
       for: "track-order-number",
-    }, "NÃºmero do pedido", numero),
+    }, "Número do pedido", numero),
 
     h("label", {
       class: "lbl",
@@ -1775,7 +1775,7 @@ function abrirAcompanhamentoPedido(numeroInicial = "", telefoneInicial = "") {
         type: "button",
         "aria-label": "Fechar acompanhamento",
         onclick: () => dlg.close(),
-      }, "Ã—")
+      }, "×")
     ),
 
     formulario
@@ -1809,7 +1809,7 @@ function updateBadge() {
   }
 }
 
-/* ---------- InÃ­cio ---------- */
+/* ---------- Início ---------- */
 
 async function init() {
   $("open-cart").addEventListener("click", openCart);
@@ -1853,20 +1853,20 @@ async function init() {
     renderMenu();
     updateBadge();
 
-    // Falhas na taxa ou nos cupons nÃ£o impedem o cardÃ¡pio de abrir.
+    // Falhas na taxa ou nos cupons não impedem o cardápio de abrir.
     await Promise.all([
       carregarCupons(),
       carregarTaxaEntrega(),
     ]);
 
-    // Atualiza os valores caso o carrinho jÃ¡ esteja aberto.
+    // Atualiza os valores caso o carrinho já esteja aberto.
     if ($("cart-dialog").open) {
       renderCart();
     }
 
     if (removed) {
       toast(
-        "Alguns itens do carrinho nÃ£o estÃ£o mais disponÃ­veis e foram removidos."
+        "Alguns itens do carrinho não estão mais disponíveis e foram removidos."
       );
     }
   } catch (err) {
@@ -1874,7 +1874,7 @@ async function init() {
 
     $("menu").replaceChildren(
       h("p", { class: "state" },
-        "NÃ£o foi possÃ­vel carregar o cardÃ¡pio. Verifique se o servidor Flask estÃ¡ rodando e recarregue a pÃ¡gina."
+        "Não foi possível carregar o cardápio. Verifique se o servidor Flask está rodando e recarregue a página."
       )
     );
   }
