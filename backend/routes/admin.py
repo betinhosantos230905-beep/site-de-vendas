@@ -119,7 +119,7 @@ def verificar_sessao_admin():
 # ASSINATURA SEGURA PARA UPLOAD DE IMAGENS
 # ==========================================
 
-@admin_bp.post("/produtos/upload-assinatura")
+@admin_bp.get("/produtos/upload-assinatura")
 @exigir_login_admin
 def assinar_upload_imagem_produto():
     cloud_name = os.getenv("CLOUDINARY_CLOUD_NAME", "").strip()
