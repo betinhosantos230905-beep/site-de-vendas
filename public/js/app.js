@@ -1,4 +1,3 @@
-
 /* Cardápio, detalhes do produto, carrinho, cupons e checkout. */
 
 const brl = n => Number(n).toLocaleString("pt-BR", {
@@ -509,7 +508,7 @@ function productCard(p, cat) {
     disabled: !p.available,
     onclick: () => openProduct(p),
   },
-   
+
     h("div", {
       class: `thumb${p.image_url ? " has-image" : ""}`,
       "aria-hidden": "true",
@@ -531,7 +530,6 @@ function productCard(p, cat) {
           })
         : cat.emoji
     ),
-
 
     h("div", { class: "card-body" },
       h("span", { class: "card-name" }, p.name),
@@ -1115,7 +1113,7 @@ function abrirCheckout() {
 
   const dlg = $("checkout-dialog");
 
-    chavePedidoPendente ||= criarChavePedido();
+  chavePedidoPendente ||= criarChavePedido();
 
   const nome = criarCampoCheckout(
     "checkout-nome", "Seu nome"
@@ -1326,7 +1324,6 @@ function abrirCheckout() {
         limparCupom();
         state.couponPhone = "";
 
-       
         dlg.replaceChildren(
           h("div", { class: "sheet-head" },
             h("h3", {}, "Pedido recebido!"),
@@ -1343,19 +1340,10 @@ function abrirCheckout() {
             h("p", {}, "Seu pedido foi registrado com sucesso."),
             h("p", {}, `Número do pedido: ${pedido.numero}`),
             h("p", {}, `Total: ${brl(pedido.total)}`),
-            h("p", {}, "Acompanhe o andamento do seu pedido pelo número e telefone informados no checkout.")
+            h("p", {}, "Você pode consultar o andamento do seu pedido pelo botão Consultar no topo do cardápio.")
           ),
 
           h("div", { class: "sheet-foot" },
-            h("button", {
-              class: "btn",
-              type: "button",
-              onclick: () => {
-                dlg.close();
-                abrirAcompanhamentoPedido(pedido.numero, telefoneCliente);
-              },
-            }, "Acompanhar meu pedido"),
-
             h("button", {
               class: "btn",
               type: "button",
@@ -1363,7 +1351,6 @@ function abrirCheckout() {
             }, "Voltar ao cardápio")
           )
         );
-
 
         toast("Pedido registrado com sucesso!");
       } catch (erro) {
@@ -1431,10 +1418,11 @@ function abrirCheckout() {
     });
   };
 
-    const atualizarTroco = () => {
+  const atualizarTroco = () => {
     troco.label.hidden = pagamento.value !== "dinheiro";
     email.input.required = pagamento.value === "pix";
-    };
+  };
+
   modalidade.addEventListener("change", () => {
     atualizarEndereco();
     atualizarTotaisCheckout();
@@ -1678,6 +1666,10 @@ function updateBadge() {
 
 async function init() {
   $("open-cart").addEventListener("click", openCart);
+
+  $("open-order-track").addEventListener("click", () => {
+    abrirAcompanhamentoPedido();
+  });
 
   const checkoutDialog = h("dialog", {
     id: "checkout-dialog",
