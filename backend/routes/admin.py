@@ -1354,9 +1354,20 @@ def validar_dados_cupom(dados):
         if not isinstance(texto, str):
             raise ValueError
 
-        return datetime.fromisoformat(
-            texto.replace("Z", "+00:00")
-        ).replace(tzinfo=None)
+        data_convertida = datetime.fromisoformat(
+            texto.replace("Z", "+00:00")).replace(tzinfo=None)
+
+        # Quando o campo contém apenas a data, considerar
+        # o último segundo desse dia como validade final.
+        if campo == "fim_em" and len(texto) == 10:
+            data_convertida = data_convertida.replace(
+                hour=23,
+                minute=59,
+                second=59,
+                microsecond=0
+    )
+
+        return data_convertida
 
     try:
         inicio_em = converter_data("inicio_em")
@@ -1424,6 +1435,39 @@ def listar_cupons_admin():
     try:
         conexao = get_connection()
         cursor = conexao.cursor(dictionary=True)
+
+        # Desativa cupons vencidos ou que atingiram o limite de usos.
+        # Os registros permanecem no banco para preservar o histórico.
+        cursor.execute("""
+            UPDATE cupons AS c
+            SET ativo = 0
+            WHERE c.ativo = 1
+              AND (
+                  (
+                      c.fim_em IS NOT NULL
+                      AND (
+                          (
+                              TIME(c.fim_em) = '00:00:00'
+                              AND DATE(c.fim_em) < CURDATE()
+                          )
+                          OR (
+                              TIME(c.fim_em) <> '00:00:00'
+                              AND c.fim_em < NOW()
+                          )
+                      )
+                  )
+                  OR (
+                      c.limite_total IS NOT NULL
+                      AND (
+                          SELECT COUNT(*)
+                          FROM cupom_usos AS u
+                          WHERE u.cupom_id = c.id
+                      ) >= c.limite_total
+                  )
+              )
+        """)
+
+        conexao.commit()
 
         cursor.execute("""
             SELECT

@@ -143,11 +143,18 @@ def validar_cupom(cursor, codigo, telefone, subtotal):
             "Esse cupom ainda não está válido."
         )
 
-    if (
-        cupom["fim_em"] is not None
-        and agora > cupom["fim_em"]
-    ):
-        raise ValueError("Esse cupom expirou.")
+    fim_em = cupom["fim_em"]
+
+    if fim_em is not None:
+        # Datas antigas armazenadas à meia-noite continuam
+        # válidas durante todo o dia indicado.
+        if fim_em.time() == datetime.min.time():
+            expirado = agora.date() > fim_em.date()
+        else:
+            expirado = agora > fim_em
+
+        if expirado:
+            raise ValueError("Esse cupom expirou.")
 
     pedido_minimo_cupom = dinheiro(
         cupom["pedido_minimo"] or ZERO
@@ -1050,8 +1057,8 @@ def create_order():
                     )
                 )
 
-        if cupom:
-            cursor.execute(
+            if cupom:
+                cursor.execute(
                 """
                 INSERT INTO cupom_usos (
                     cupom_id,
@@ -1067,6 +1074,29 @@ def create_order():
                     desconto,
                 )
             )
+
+            # Desativa o cupom quando atingir o limite de usos.
+            if cupom["limite_total"] is not None:
+                cursor.execute(
+                    """
+                    SELECT COUNT(*) AS total
+                    FROM cupom_usos
+                    WHERE cupom_id = %s
+                    """,
+                    (cupom["id"],)
+                )
+
+                usos_totais = int(cursor.fetchone()["total"])
+
+                if usos_totais >= int(cupom["limite_total"]):
+                    cursor.execute(
+                        """
+                        UPDATE cupons
+                        SET ativo = 0
+                        WHERE id = %s
+                        """,
+                        (cupom["id"],)
+                    )
 
         cursor.execute(
             """
@@ -1084,22 +1114,6 @@ def create_order():
                 pagamento,
                 total,
                 troco_para,
-            )
-        )
-
-        cursor.execute(
-            """
-            INSERT INTO historico_status_pedido (
-                pedido_id,
-                status_anterior,
-                status_novo,
-                motivo
-            )
-            VALUES (%s, NULL, 'recebido', %s)
-            """,
-            (
-                pedido_id,
-                "Pedido criado pelo site.",
             )
         )
 
