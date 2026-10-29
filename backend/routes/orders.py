@@ -1148,3 +1148,131 @@ def create_order():
 
         if conn and conn.is_connected():
             conn.close()
+
+# Consulta pública do acompanhamento de um pedido.
+@orders_bp.get("/orders/track")
+def track_order():
+    numero = str(
+        request.args.get("numero", "")
+    ).strip().upper()
+
+    telefone = normalizar_telefone(
+        request.args.get("telefone", "")
+    )
+
+    if not numero or len(numero) > 30:
+        return jsonify({
+            "error": "Informe um número de pedido válido."
+        }), 400
+
+    if not 10 <= len(telefone) <= 15:
+        return jsonify({
+            "error": "Informe o telefone usado no pedido."
+        }), 400
+
+    conn = None
+    cursor = None
+
+    try:
+        conn = get_connection()
+        cursor = conn.cursor(dictionary=True)
+
+        cursor.execute(
+            """
+            SELECT
+                id,
+                numero,
+                telefone_cliente,
+                modalidade,
+                status,
+                motivo_cancelamento,
+                criado_em,
+                atualizado_em
+            FROM pedidos
+            WHERE numero = %s
+            LIMIT 1
+            """,
+            (numero,)
+        )
+
+        pedido = cursor.fetchone()
+
+        if (
+            not pedido
+            or normalizar_telefone(
+                pedido.get("telefone_cliente", "")
+            ) != telefone
+        ):
+            return jsonify({
+                "error": (
+                    "Não encontramos um pedido com esses dados. "
+                    "Confira o número e o telefone."
+                )
+            }), 404
+
+        cursor.execute(
+            """
+            SELECT
+                status_anterior,
+                status_novo,
+                motivo,
+                criado_em
+            FROM historico_status_pedido
+            WHERE pedido_id = %s
+            ORDER BY criado_em ASC, id ASC
+            """,
+            (pedido["id"],)
+        )
+
+        historico = cursor.fetchall()
+
+        def formatar_data(valor):
+            return (
+                valor.strftime("%Y-%m-%dT%H:%M:%S")
+                if valor is not None
+                else None
+            )
+
+        return jsonify({
+            "pedido": {
+                "numero": pedido["numero"],
+                "modalidade": pedido["modalidade"],
+                "status": pedido["status"],
+                "motivo_cancelamento": (
+                    pedido["motivo_cancelamento"]
+                    if pedido["status"] == "cancelado"
+                    else None
+                ),
+                "criado_em": formatar_data(
+                    pedido["criado_em"]
+                ),
+                "atualizado_em": formatar_data(
+                    pedido["atualizado_em"]
+                ),
+                "historico": [
+                    {
+                        "status_anterior": item["status_anterior"],
+                        "status": item["status_novo"],
+                        "motivo": item["motivo"],
+                        "data": formatar_data(item["criado_em"]),
+                    }
+                    for item in historico
+                ],
+            }
+        }), 200
+
+    except Exception:
+        logging.exception(
+            "Erro ao consultar acompanhamento de pedido."
+        )
+
+        return jsonify({
+            "error": "Não foi possível consultar o pedido agora."
+        }), 500
+
+    finally:
+        if cursor is not None:
+            cursor.close()
+
+        if conn is not None:
+            conn.close()

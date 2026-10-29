@@ -63,8 +63,14 @@ const SaltyAPI = (() => {
     // Valida o cupom informado pelo cliente.
     validateCoupon: data => post("/coupons/validate", data),
 
-    // Envia os dados para registrar um pedido.
+        // Envia os dados para registrar um pedido.
     // O backend recalcula os preços, a taxa e o desconto.
     createOrder: data => post("/orders", data),
+
+    // Consulta o andamento de um pedido pelo número e telefone.
+    trackOrder: (numero, telefone) =>
+      get(
+        `/orders/track?numero=${encodeURIComponent(numero)}&telefone=${encodeURIComponent(telefone)}`
+      ),
   };
 })();
