@@ -1,4 +1,3 @@
-
 /* =========================================================
    SALTY — Comunicação com a API do backend
    ========================================================= */
@@ -57,13 +56,16 @@ const SaltyAPI = (() => {
     // Lista pública de cupons disponíveis para os clientes.
     coupons: () => get("/coupons"),
 
-    // Busca a taxa de entrega configurada no banco de dados.
+    // Busca a taxa de entrega padrão configurada no banco.
     deliverySettings: () => get("/configuracoes"),
+
+    // Lista as regiões de entrega ativas.
+    deliveryRegions: () => get("/regioes-entrega"),
 
     // Valida o cupom informado pelo cliente.
     validateCoupon: data => post("/coupons/validate", data),
 
-        // Envia os dados para registrar um pedido.
+    // Envia os dados para registrar um pedido.
     // O backend recalcula os preços, a taxa e o desconto.
     createOrder: data => post("/orders", data),
 

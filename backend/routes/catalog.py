@@ -1,4 +1,4 @@
-﻿
+
 from flask import Blueprint, jsonify, request
 
 from backend.services import catalog_service as service
@@ -97,6 +97,64 @@ def get_public_settings():
 
         if conexao is not None:
             conexao.close()
+
+
+# ==========================================
+# REGIÕES DE ENTREGA DISPONÍVEIS
+# ==========================================
+
+@catalog_bp.get("/regioes-entrega")
+def get_public_delivery_regions():
+    conexao = None
+    cursor = None
+
+    try:
+        conexao = get_connection()
+        cursor = conexao.cursor(dictionary=True)
+
+        cursor.execute("""
+            SELECT
+                cidade,
+                bairro,
+                taxa,
+                prazo_estimado_min
+            FROM regioes_entrega
+            WHERE ativo = 1
+            ORDER BY cidade ASC, bairro ASC
+        """)
+
+        regioes = cursor.fetchall()
+
+        dados = [
+            {
+                "cidade": regiao["cidade"],
+                "bairro": regiao["bairro"],
+                "taxa": str(regiao["taxa"]),
+                "prazo_estimado_min": regiao["prazo_estimado_min"],
+            }
+            for regiao in regioes
+        ]
+
+        return _ok(dados)
+
+    except Exception as erro:
+        print(
+            "ERRO AO BUSCAR AS REGIÕES DE ENTREGA:",
+            repr(erro),
+            flush=True
+        )
+
+        return jsonify({
+            "error": "Não foi possível carregar as regiões de entrega."
+        }), 500
+
+    finally:
+        if cursor is not None:
+            cursor.close()
+
+        if conexao is not None:
+            conexao.close()
+
 
 
 # ==========================================

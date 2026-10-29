@@ -1,4 +1,4 @@
-/* Cardápio, detalhes do produto, carrinho, cupons e checkout. */
+/* CardÃ¡pio, detalhes do produto, carrinho, cupons e checkout. */
 
 const brl = n => Number(n).toLocaleString("pt-BR", {
   style: "currency",
@@ -58,6 +58,8 @@ const state = {
   products: [],
   coupons: [],
   deliveryFee: 7.00,
+  deliveryRegions: [],
+  deliveryRegionsLoaded: false,
   active: "all",
   appliedCoupon: null,
   couponPhone: "",
@@ -110,7 +112,7 @@ function textoDescontoCupom(cupom) {
     return `${brl(valor)} de desconto`;
   }
 
-  return "Consulte as condições do cupom";
+  return "Consulte as condiÃ§Ãµes do cupom";
 }
 
 function formatarValidadeCupom(data) {
@@ -120,12 +122,12 @@ function formatarValidadeCupom(data) {
   const correspondencia = texto.match(/^(\d{4})-(\d{2})-(\d{2})/);
 
   if (!correspondencia) {
-    return `Válido até ${texto}`;
+    return `VÃ¡lido atÃ© ${texto}`;
   }
 
   const [, ano, mes, dia] = correspondencia;
 
-  return `Válido até ${dia}/${mes}/${ano}`;
+  return `VÃ¡lido atÃ© ${dia}/${mes}/${ano}`;
 }
 
 /*
@@ -140,7 +142,7 @@ function criarSecaoCupons() {
   secao = h("section", {
     id: "coupons-section",
     class: "coupons-section",
-    "aria-label": "Cupons disponíveis",
+    "aria-label": "Cupons disponÃ­veis",
   });
 
   const lista = h("div", {
@@ -168,14 +170,14 @@ function criarSecaoCupons() {
     }, "%"),
 
     h("span", { class: "coupons-toggle-text" },
-      h("strong", {}, "Cupons disponíveis"),
+      h("strong", {}, "Cupons disponÃ­veis"),
       h("small", {}, "Toque para conferir seus descontos")
     ),
 
     h("span", {
       class: "coupons-toggle-arrow",
       "aria-hidden": "true",
-    }, "⌄")
+    }, "âŒ„")
   );
 
   secao.append(abrir, lista);
@@ -263,7 +265,7 @@ function renderCoupons() {
 
           minimo > 0
             ? h("p", { class: "coupon-detail" },
-                `Pedido mínimo: ${brl(minimo)}`
+                `Pedido mÃ­nimo: ${brl(minimo)}`
               )
             : null,
 
@@ -286,7 +288,7 @@ async function carregarCupons() {
 
     renderCoupons();
   } catch (erro) {
-    console.warn("Não foi possível carregar os cupons:", erro);
+    console.warn("NÃ£o foi possÃ­vel carregar os cupons:", erro);
 
     state.coupons = [];
 
@@ -303,17 +305,55 @@ async function carregarTaxaEntrega() {
     const taxa = Number(dados?.taxa_entrega_padrao);
 
     if (!Number.isFinite(taxa) || taxa < 0) {
-      throw new Error("A taxa de entrega retornada é inválida.");
+      throw new Error("A taxa de entrega retornada Ã© invÃ¡lida.");
     }
 
     state.deliveryFee = taxa;
   } catch (erro) {
     console.warn(
-      "Não foi possível carregar a taxa de entrega. Será usado o valor padrão de R$ 7,00:",
+      "NÃ£o foi possÃ­vel carregar a taxa de entrega. SerÃ¡ usado o valor padrÃ£o de R$ 7,00:",
       erro
     );
   }
 }
+
+
+/* ---------- RegiÃµes de entrega ---------- */
+
+async function carregarRegioesEntrega() {
+  try {
+    const resposta = await SaltyAPI.deliveryRegions();
+    const dados = resposta?.data || resposta;
+
+    if (!Array.isArray(dados)) {
+      throw new Error(
+        "A lista de regiÃµes de entrega retornada Ã© invÃ¡lida."
+      );
+    }
+
+    state.deliveryRegions = dados.filter(regiao =>
+      typeof regiao?.cidade === "string" &&
+      typeof regiao?.bairro === "string" &&
+      Number.isFinite(Number(regiao?.taxa)) &&
+      Number(regiao.taxa) >= 0
+    );
+
+    state.deliveryRegionsLoaded = true;
+
+    return true;
+  } catch (erro) {
+    state.deliveryRegions = [];
+    state.deliveryRegionsLoaded = false;
+
+    console.error(
+      "NÃ£o foi possÃ­vel carregar as regiÃµes de entrega:",
+      erro
+    );
+
+    return false;
+  }
+}
+
 
 function limparCupom(mensagem = "") {
   state.appliedCoupon = null;
@@ -354,7 +394,7 @@ async function aplicarCupom() {
   const subtotal = SaltyCart.subtotal();
 
   if (!codigo) {
-    limparCupom("Digite o código do cupom.");
+    limparCupom("Digite o cÃ³digo do cupom.");
     renderCart();
     return;
   }
@@ -402,7 +442,7 @@ async function aplicarCupom() {
       limparCupom(
         dados?.error ||
         dados?.mensagem ||
-        "Este cupom não é válido para o seu pedido."
+        "Este cupom nÃ£o Ã© vÃ¡lido para o seu pedido."
       );
 
       renderCart();
@@ -412,7 +452,7 @@ async function aplicarCupom() {
     const desconto = obterDesconto(resposta);
 
     if (!Number.isFinite(desconto) || desconto <= 0) {
-      limparCupom("O servidor não retornou um desconto válido.");
+      limparCupom("O servidor nÃ£o retornou um desconto vÃ¡lido.");
       renderCart();
       return;
     }
@@ -428,7 +468,7 @@ async function aplicarCupom() {
     };
 
     state.couponMessage =
-      `Cupom aplicado! Você economiza ${brl(state.appliedCoupon.desconto)}.`;
+      `Cupom aplicado! VocÃª economiza ${brl(state.appliedCoupon.desconto)}.`;
 
     renderCart();
 
@@ -437,7 +477,7 @@ async function aplicarCupom() {
     if (requisicaoAtual !== state.couponRequestId) return;
 
     limparCupom(
-      erro.message || "Não foi possível validar o cupom."
+      erro.message || "NÃ£o foi possÃ­vel validar o cupom."
     );
 
     renderCart();
@@ -543,11 +583,11 @@ function productCard(p, cat) {
           : null,
 
         promocional !== null
-          ? h("span", { class: "tag" }, "Promoção")
+          ? h("span", { class: "tag" }, "PromoÃ§Ã£o")
           : null,
 
         !p.available
-          ? h("span", { class: "tag off" }, "Indisponível")
+          ? h("span", { class: "tag off" }, "IndisponÃ­vel")
           : null
       )
     )
@@ -586,7 +626,7 @@ function renderMenu() {
   );
 }
 
-/* ---------- Detalhes e personalização ---------- */
+/* ---------- Detalhes e personalizaÃ§Ã£o ---------- */
 
 function openProduct(p) {
   const dlg = $("product-dialog");
@@ -675,10 +715,10 @@ function openProduct(p) {
     const rule = g.min > 0
       ? (
           single
-            ? "Obrigatório: escolha 1"
-            : `Obrigatório: escolha de ${g.min} a ${g.max}`
+            ? "ObrigatÃ³rio: escolha 1"
+            : `ObrigatÃ³rio: escolha de ${g.min} a ${g.max}`
         )
-      : `Opcional: até ${g.max}`;
+      : `Opcional: atÃ© ${g.max}`;
 
     const fs = h("fieldset", { class: "group" },
       h("legend", {}, g.name),
@@ -771,14 +811,14 @@ function openProduct(p) {
         type: "button",
         "aria-label": "Fechar",
         onclick: () => dlg.close(),
-      }, "×")
+      }, "Ã—")
     ),
 
     h("div", { class: "sheet-body" },
       ...groups,
 
       h("label", { class: "lbl", for: "pd-note" },
-        "Observações"
+        "ObservaÃ§Ãµes"
       ),
 
       note
@@ -794,7 +834,7 @@ function openProduct(p) {
           type: "button",
           "aria-label": "Diminuir",
           onclick: step(-1),
-        }, "−"),
+        }, "âˆ’"),
 
         qtyOut,
 
@@ -849,7 +889,7 @@ function renderCart() {
       type: "button",
       "aria-label": "Fechar carrinho",
       onclick: () => dlg.close(),
-    }, "×")
+    }, "Ã—")
   );
 
   if (!items.length) {
@@ -860,7 +900,7 @@ function renderCart() {
 
       h("div", { class: "sheet-body" },
         h("p", { class: "state" },
-          "Seu carrinho está vazio. Escolha algo no cardápio."
+          "Seu carrinho estÃ¡ vazio. Escolha algo no cardÃ¡pio."
         )
       ),
 
@@ -869,7 +909,7 @@ function renderCart() {
           class: "btn",
           type: "button",
           onclick: () => dlg.close(),
-        }, "Voltar ao cardápio")
+        }, "Voltar ao cardÃ¡pio")
       )
     );
 
@@ -904,7 +944,7 @@ function renderCart() {
             type: "button",
             "aria-label": `Diminuir ${i.name}`,
             onclick: () => SaltyCart.setQty(i.key, i.qty - 1),
-          }, "−"),
+          }, "âˆ’"),
 
           h("output", {}, i.qty),
 
@@ -927,7 +967,7 @@ function renderCart() {
   const campoCupom = h("input", {
     id: "coupon-code",
     type: "text",
-    placeholder: "Digite o código do cupom",
+    placeholder: "Digite o cÃ³digo do cupom",
     autocomplete: "off",
     maxlength: "80",
     value: state.appliedCoupon?.codigo || "",
@@ -935,7 +975,7 @@ function renderCart() {
 
   campoCupom.addEventListener("input", () => {
     if (state.appliedCoupon) {
-      limparCupom("O código mudou. Aplique o cupom novamente.");
+      limparCupom("O cÃ³digo mudou. Aplique o cupom novamente.");
     }
 
     campoCupom.value = campoCupom.value.toUpperCase();
@@ -989,7 +1029,7 @@ function renderCart() {
     state.appliedCoupon
       ? h("div", { class: "coupon-total" },
           h("span", {}, `Cupom ${state.appliedCoupon.codigo}`),
-          h("span", {}, `− ${brl(desconto)}`)
+          h("span", {}, `âˆ’ ${brl(desconto)}`)
         )
       : null,
 
@@ -1017,11 +1057,11 @@ function renderCart() {
         h("h4", {}, "Tem um cupom de desconto?"),
 
         h("p", { class: "hint" },
-          "Informe o código e o telefone usado no pedido."
+          "Informe o cÃ³digo e o telefone usado no pedido."
         ),
 
         h("label", { class: "lbl", for: "coupon-code" },
-          "Código do cupom",
+          "CÃ³digo do cupom",
           campoCupom
         ),
 
@@ -1037,7 +1077,7 @@ function renderCart() {
       totais,
 
       h("p", { class: "hint" },
-        "O total exibido considera a taxa de entrega padrão. A taxa e o desconto serão conferidos pelo servidor ao registrar o pedido."
+        "O total exibido considera a taxa de entrega padrÃ£o. A taxa e o desconto serÃ£o conferidos pelo servidor ao registrar o pedido."
       )
     ),
 
@@ -1046,7 +1086,7 @@ function renderCart() {
         class: "btn ghost",
         type: "button",
         onclick: () => dlg.close(),
-      }, "Voltar ao cardápio"),
+      }, "Voltar ao cardÃ¡pio"),
 
       h("button", {
         class: "btn",
@@ -1103,10 +1143,14 @@ function criarChavePedido() {
 
 /* ---------- Checkout ---------- */
 
-function abrirCheckout() {
+async function abrirCheckout() {
   if (!SaltyCart.items.length) {
     toast("Adicione produtos antes de finalizar.");
     return;
+  }
+
+  if (!state.deliveryRegionsLoaded) {
+    await carregarRegioesEntrega();
   }
 
   invalidarCupomSeNecessario();
@@ -1132,13 +1176,20 @@ function abrirCheckout() {
   email.input.autocomplete = "email";
 
   const modalidade = h("select", {
-    id: "checkout-modalidade",
-    name: "modalidade",
-    required: true,
-  },
-    h("option", { value: "entrega" }, "Entrega"),
-    h("option", { value: "retirada" }, "Retirada no local")
-  );
+  id: "checkout-modalidade",
+  name: "modalidade",
+  required: true,
+},
+  h("option", {
+    value: "entrega",
+    disabled: state.deliveryRegions.length === 0,
+  }, "Entrega"),
+  h("option", { value: "retirada" }, "Retirada no local")
+);
+
+if (state.deliveryRegions.length === 0) {
+  modalidade.value = "retirada";
+}
 
   const modalidadeLabel = h("label", {
     class: "lbl",
@@ -1147,25 +1198,97 @@ function abrirCheckout() {
 
   const cep = criarCampoCheckout("checkout-cep", "CEP");
   const rua = criarCampoCheckout("checkout-rua", "Rua");
-  const numero = criarCampoCheckout("checkout-numero", "Número");
+  const numero = criarCampoCheckout("checkout-numero", "NÃºmero");
 
   const complemento = criarCampoCheckout(
     "checkout-complemento", "Complemento (opcional)", "text", false
   );
 
-  const bairro = criarCampoCheckout("checkout-bairro", "Bairro");
-  const cidade = criarCampoCheckout("checkout-cidade", "Cidade");
+  const cidadeSelect = h("select", {
+  id: "checkout-cidade",
+  name: "checkout-cidade",
+  required: true,
+},
+  h("option", { value: "" }, "Selecione a cidade")
+);
+
+const cidadeLabel = h("label", {
+  class: "lbl",
+  for: "checkout-cidade",
+}, "Cidade", cidadeSelect);
+
+const bairroSelect = h("select", {
+  id: "checkout-bairro",
+  name: "checkout-bairro",
+  required: true,
+  disabled: true,
+},
+  h("option", { value: "" }, "Selecione primeiro a cidade")
+);
+
+const bairroLabel = h("label", {
+  class: "lbl",
+  for: "checkout-bairro",
+}, "Bairro", bairroSelect);
+
+const cidade = { input: cidadeSelect, label: cidadeLabel };
+const bairro = { input: bairroSelect, label: bairroLabel };
+
+const cidadesDisponiveis = [
+  ...new Set(
+    state.deliveryRegions.map(regiao => regiao.cidade)
+  ),
+].sort((a, b) => a.localeCompare(b, "pt-BR"));
+
+cidadesDisponiveis.forEach(nomeCidade => {
+  cidadeSelect.append(
+    h("option", { value: nomeCidade }, nomeCidade)
+  );
+});
+
+const atualizarBairros = () => {
+  const cidadeSelecionada = cidadeSelect.value;
+
+  bairroSelect.replaceChildren(
+    h("option", { value: "" }, "Selecione o bairro")
+  );
+
+  const bairrosDisponiveis = state.deliveryRegions
+    .filter(regiao => regiao.cidade === cidadeSelecionada)
+    .map(regiao => regiao.bairro)
+    .sort((a, b) => a.localeCompare(b, "pt-BR"));
+
+  bairrosDisponiveis.forEach(nomeBairro => {
+    bairroSelect.append(
+      h("option", { value: nomeBairro }, nomeBairro)
+    );
+  });
+
+  bairroSelect.disabled = bairrosDisponiveis.length === 0;
+  bairroSelect.value = "";
+};
+
+cidadeSelect.addEventListener("change", () => {
+  atualizarBairros();
+  atualizarTotaisCheckout();
+});
+
+bairroSelect.addEventListener("change", () => {
+  atualizarTotaisCheckout();
+});
+
+
   const uf = criarCampoCheckout("checkout-uf", "Estado (UF)");
 
   const referencia = criarCampoCheckout(
-    "checkout-referencia", "Ponto de referência (opcional)", "text", false
+    "checkout-referencia", "Ponto de referÃªncia (opcional)", "text", false
   );
 
   uf.input.maxLength = 2;
   uf.input.autocomplete = "address-level1";
 
   const endereco = h("div", { class: "checkout-address" },
-    h("h4", {}, "Endereço de entrega"),
+    h("h4", {}, "EndereÃ§o de entrega"),
     cep.label,
     rua.label,
     numero.label,
@@ -1183,7 +1306,7 @@ function abrirCheckout() {
   },
     h("option", { value: "pix" }, "Pix"),
     h("option", { value: "dinheiro" }, "Dinheiro"),
-    h("option", { value: "cartao_entrega" }, "Cartão na entrega")
+    h("option", { value: "cartao_entrega" }, "CartÃ£o na entrega")
   );
 
   const pagamentoLabel = h("label", {
@@ -1202,13 +1325,13 @@ function abrirCheckout() {
     id: "checkout-observacoes",
     name: "observacoes",
     maxlength: "300",
-    placeholder: "Alguma observação para o pedido?",
+    placeholder: "Alguma observaÃ§Ã£o para o pedido?",
   });
 
   const observacoesLabel = h("label", {
     class: "lbl",
     for: "checkout-observacoes",
-  }, "Observações", observacoes);
+  }, "ObservaÃ§Ãµes", observacoes);
 
   const mensagem = h("p", {
     class: "hint",
@@ -1229,8 +1352,22 @@ function abrirCheckout() {
   const taxaCheckoutValor = h("strong", {}, "");
   const totalCheckoutValor = h("strong", {}, "");
 
-  const taxaCheckout = () =>
-    modalidade.value === "entrega" ? state.deliveryFee : 0;
+
+  const buscarRegiaoSelecionada = () =>
+    state.deliveryRegions.find(regiao =>
+      regiao.cidade === cidade.input.value &&
+      regiao.bairro === bairro.input.value
+    );
+
+  const taxaCheckout = () => {
+    if (modalidade.value !== "entrega") {
+      return 0;
+    }
+
+    const regiao = buscarRegiaoSelecionada();
+
+    return regiao ? Number(regiao.taxa) : 0;
+  };
 
   const totalCheckout = () =>
     Math.max(
@@ -1243,6 +1380,7 @@ function abrirCheckout() {
     totalCheckoutValor.textContent = brl(totalCheckout());
   };
 
+
   const formulario = h("form", {
     class: "sheet-body",
 
@@ -1250,6 +1388,15 @@ function abrirCheckout() {
       event.preventDefault();
 
       if (!formulario.reportValidity()) return;
+      if (modalidade.value === "entrega") {
+  const regiao = buscarRegiaoSelecionada();
+
+  if (!regiao) {
+    mensagem.textContent =
+      "Selecione uma cidade e um bairro atendidos pela SALTY.";
+    return;
+  }
+}
 
       enviar.disabled = true;
       enviar.textContent = "Enviando pedido...";
@@ -1314,7 +1461,7 @@ function abrirCheckout() {
 
         if (!pedido || !pedido.numero) {
           throw new Error(
-            "O servidor não retornou a confirmação do pedido."
+            "O servidor nÃ£o retornou a confirmaÃ§Ã£o do pedido."
           );
         }
 
@@ -1333,14 +1480,14 @@ function abrirCheckout() {
               type: "button",
               "aria-label": "Fechar",
               onclick: () => dlg.close(),
-            }, "×")
+            }, "Ã—")
           ),
 
           h("div", { class: "sheet-body" },
             h("p", {}, "Seu pedido foi registrado com sucesso."),
-            h("p", {}, `Número do pedido: ${pedido.numero}`),
+            h("p", {}, `NÃºmero do pedido: ${pedido.numero}`),
             h("p", {}, `Total: ${brl(pedido.total)}`),
-            h("p", {}, "Você pode consultar o andamento do seu pedido pelo botão Consultar no topo do cardápio.")
+            h("p", {}, "VocÃª pode consultar o andamento do seu pedido pelo botÃ£o Consultar no topo do cardÃ¡pio.")
           ),
 
           h("div", { class: "sheet-foot" },
@@ -1348,7 +1495,7 @@ function abrirCheckout() {
               class: "btn",
               type: "button",
               onclick: () => dlg.close(),
-            }, "Voltar ao cardápio")
+            }, "Voltar ao cardÃ¡pio")
           )
         );
 
@@ -1356,7 +1503,7 @@ function abrirCheckout() {
       } catch (erro) {
         mensagem.textContent =
           erro.message ||
-          "Não foi possível registrar o pedido. Tente novamente.";
+          "NÃ£o foi possÃ­vel registrar o pedido. Tente novamente.";
 
         enviar.disabled = false;
         enviar.textContent = "Tentar novamente";
@@ -1381,7 +1528,7 @@ function abrirCheckout() {
       state.appliedCoupon
         ? h("div", { class: "coupon-total" },
             h("span", {}, `Cupom ${state.appliedCoupon.codigo}`),
-            h("strong", {}, `− ${brl(descontoCheckout)}`)
+            h("strong", {}, `âˆ’ ${brl(descontoCheckout)}`)
           )
         : null,
 
@@ -1443,7 +1590,7 @@ function abrirCheckout() {
         type: "button",
         "aria-label": "Fechar checkout",
         onclick: () => dlg.close(),
-      }, "×")
+      }, "Ã—")
     ),
 
     formulario
@@ -1476,7 +1623,7 @@ function abrirAcompanhamentoPedido(numeroInicial = "", telefoneInicial = "") {
     required: true,
     maxlength: "80",
     autocomplete: "off",
-    placeholder: "Número do pedido",
+    placeholder: "NÃºmero do pedido",
     value: numeroInicial,
   });
 
@@ -1516,7 +1663,7 @@ function abrirAcompanhamentoPedido(numeroInicial = "", telefoneInicial = "") {
       const telefoneCliente = telefone.value.trim();
 
       if (!numeroPedido || !telefoneCliente) {
-        mensagem.textContent = "Informe o número do pedido e o telefone.";
+        mensagem.textContent = "Informe o nÃºmero do pedido e o telefone.";
         return;
       }
 
@@ -1534,7 +1681,7 @@ function abrirAcompanhamentoPedido(numeroInicial = "", telefoneInicial = "") {
         const pedido = resposta?.pedido || resposta?.data || resposta;
 
         if (!pedido || !pedido.status) {
-          throw new Error("Não foi possível localizar o pedido.");
+          throw new Error("NÃ£o foi possÃ­vel localizar o pedido.");
         }
 
         const statusLabels = {
@@ -1576,28 +1723,28 @@ function abrirAcompanhamentoPedido(numeroInicial = "", telefoneInicial = "") {
               )
             : "",
 
-          h("h4", {}, "Histórico do pedido"),
+          h("h4", {}, "HistÃ³rico do pedido"),
 
           historico.length
             ? h("ul", {},
                 historico.map(item =>
                   h("li", {},
-                    statusLabels[item.status] || item.status || "Atualização",
+                    statusLabels[item.status] || item.status || "AtualizaÃ§Ã£o",
                     item.criado_em || item.data
-                      ? ` — ${item.criado_em || item.data}`
+                      ? ` â€” ${item.criado_em || item.data}`
                       : ""
                   )
                 )
               )
             : h("p", {},
-                "Ainda não há atualizações no histórico."
+                "Ainda nÃ£o hÃ¡ atualizaÃ§Ãµes no histÃ³rico."
               )
         );
 
         mensagem.textContent = "Consulta realizada com sucesso.";
       } catch (erro) {
         mensagem.textContent =
-          erro.message || "Não foi possível consultar o pedido.";
+          erro.message || "NÃ£o foi possÃ­vel consultar o pedido.";
       } finally {
         consultar.disabled = false;
         consultar.textContent = "Consultar pedido";
@@ -1607,7 +1754,7 @@ function abrirAcompanhamentoPedido(numeroInicial = "", telefoneInicial = "") {
     h("label", {
       class: "lbl",
       for: "track-order-number",
-    }, "Número do pedido", numero),
+    }, "NÃºmero do pedido", numero),
 
     h("label", {
       class: "lbl",
@@ -1628,7 +1775,7 @@ function abrirAcompanhamentoPedido(numeroInicial = "", telefoneInicial = "") {
         type: "button",
         "aria-label": "Fechar acompanhamento",
         onclick: () => dlg.close(),
-      }, "×")
+      }, "Ã—")
     ),
 
     formulario
@@ -1662,7 +1809,7 @@ function updateBadge() {
   }
 }
 
-/* ---------- Início ---------- */
+/* ---------- InÃ­cio ---------- */
 
 async function init() {
   $("open-cart").addEventListener("click", openCart);
@@ -1706,20 +1853,20 @@ async function init() {
     renderMenu();
     updateBadge();
 
-    // Falhas na taxa ou nos cupons não impedem o cardápio de abrir.
+    // Falhas na taxa ou nos cupons nÃ£o impedem o cardÃ¡pio de abrir.
     await Promise.all([
       carregarCupons(),
       carregarTaxaEntrega(),
     ]);
 
-    // Atualiza os valores caso o carrinho já esteja aberto.
+    // Atualiza os valores caso o carrinho jÃ¡ esteja aberto.
     if ($("cart-dialog").open) {
       renderCart();
     }
 
     if (removed) {
       toast(
-        "Alguns itens do carrinho não estão mais disponíveis e foram removidos."
+        "Alguns itens do carrinho nÃ£o estÃ£o mais disponÃ­veis e foram removidos."
       );
     }
   } catch (err) {
@@ -1727,7 +1874,7 @@ async function init() {
 
     $("menu").replaceChildren(
       h("p", { class: "state" },
-        "Não foi possível carregar o cardápio. Verifique se o servidor Flask está rodando e recarregue a página."
+        "NÃ£o foi possÃ­vel carregar o cardÃ¡pio. Verifique se o servidor Flask estÃ¡ rodando e recarregue a pÃ¡gina."
       )
     );
   }
