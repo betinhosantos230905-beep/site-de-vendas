@@ -1,4 +1,3 @@
-
 import json
 import logging
 import secrets
@@ -447,6 +446,7 @@ def create_order():
         return jsonify({
             "error": "Escolha entrega ou retirada."
         }), 400
+
     if pagamento == "pix":
         if (
             not email
@@ -888,23 +888,43 @@ def create_order():
                     )
 
             cidade = endereco_limpo["cidade"].strip()
+            bairro = endereco_limpo["bairro"].strip()
             uf = endereco_limpo["uf"].strip().upper()
 
-            if (
-                cidade.casefold() != "vassouras"
-                or uf != "RJ"
-            ):
+            endereco_limpo["uf"] = uf
+
+            if not cidade or not bairro or not uf:
                 raise ValueError(
-                    "No momento, a SALTY entrega "
-                    "somente em Vassouras, RJ."
+                    "Informe a cidade, o bairro e o estado para a entrega."
                 )
 
-            taxa_entrega = dinheiro(
-                config.get(
-                    "taxa_entrega_padrao",
-                    "7.00"
-                )
+            cursor.execute(
+                """
+                SELECT
+                    id,
+                    cidade,
+                    bairro,
+                    taxa,
+                    prazo_estimado_min
+                FROM regioes_entrega
+                WHERE LOWER(TRIM(cidade)) = LOWER(%s)
+                  AND LOWER(TRIM(bairro)) = LOWER(%s)
+                  AND ativo = 1
+                LIMIT 1
+                FOR UPDATE
+                """,
+                (cidade, bairro)
             )
+
+            regiao = cursor.fetchone()
+
+            if not regiao:
+                raise ValueError(
+                    "Ainda não entregamos nesse bairro. "
+                    "Confira o endereço ou fale com a SALTY."
+                )
+
+            taxa_entrega = dinheiro(regiao["taxa"])
 
             if taxa_entrega < ZERO:
                 raise ValueError(
@@ -1057,8 +1077,8 @@ def create_order():
                     )
                 )
 
-            if cupom:
-                cursor.execute(
+        if cupom:
+            cursor.execute(
                 """
                 INSERT INTO cupom_usos (
                     cupom_id,
@@ -1162,6 +1182,7 @@ def create_order():
 
         if conn and conn.is_connected():
             conn.close()
+
 
 # Consulta pública do acompanhamento de um pedido.
 @orders_bp.get("/orders/track")
