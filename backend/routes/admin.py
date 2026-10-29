@@ -1765,6 +1765,334 @@ def alterar_ativo_cupom_admin(cupom_id):
 
 
 # ==========================================
+# REGIÕES DE ENTREGA
+# ==========================================
+
+def validar_dados_regiao(dados):
+    """Valida os dados recebidos para uma região de entrega."""
+    if not isinstance(dados, dict):
+        return None, "Envie os dados da região em formato válido."
+
+    bairro = dados.get("bairro")
+    cidade = dados.get("cidade")
+
+    if not isinstance(bairro, str) or not bairro.strip():
+        return None, "Informe o bairro."
+
+    if not isinstance(cidade, str) or not cidade.strip():
+        return None, "Informe a cidade."
+
+    bairro = bairro.strip()
+    cidade = cidade.strip()
+
+    if len(bairro) > 80:
+        return None, "O bairro deve ter no máximo 80 caracteres."
+
+    if len(cidade) > 80:
+        return None, "A cidade deve ter no máximo 80 caracteres."
+
+    try:
+        taxa = Decimal(str(dados.get("taxa")))
+
+        if (
+            not taxa.is_finite()
+            or taxa < Decimal("0")
+            or taxa > Decimal("99999999.99")
+        ):
+            raise ValueError()
+
+        taxa = taxa.quantize(Decimal("0.01"))
+
+    except (InvalidOperation, TypeError, ValueError):
+        return None, "Informe uma taxa de entrega válida."
+
+    prazo = dados.get("prazo_estimado_min")
+
+    if prazo in ("", None):
+        prazo = None
+    else:
+        if (
+            isinstance(prazo, bool)
+            or not isinstance(prazo, int)
+            or prazo < 0
+            or prazo > 65535
+        ):
+            return None, "Informe um prazo válido em minutos."
+
+    ativo = dados.get("ativo", True)
+
+    if not isinstance(ativo, bool):
+        return None, "O campo ativo deve ser verdadeiro ou falso."
+
+    return {
+        "bairro": bairro,
+        "cidade": cidade,
+        "taxa": taxa,
+        "prazo_estimado_min": prazo,
+        "ativo": ativo,
+    }, None
+
+
+@admin_bp.get("/regioes-entrega")
+@exigir_login_admin
+def listar_regioes_entrega_admin():
+    conexao = None
+    cursor = None
+
+    try:
+        conexao = get_connection()
+        cursor = conexao.cursor(dictionary=True)
+
+        cursor.execute("""
+            SELECT
+                id,
+                bairro,
+                cidade,
+                taxa,
+                prazo_estimado_min,
+                ativo
+            FROM regioes_entrega
+            ORDER BY cidade, bairro
+        """)
+
+        regioes = cursor.fetchall()
+
+        for regiao in regioes:
+            regiao["id"] = int(regiao["id"])
+            regiao["taxa"] = str(regiao["taxa"])
+            regiao["prazo_estimado_min"] = (
+                int(regiao["prazo_estimado_min"])
+                if regiao["prazo_estimado_min"] is not None
+                else None
+            )
+            regiao["ativo"] = bool(regiao["ativo"])
+
+        return jsonify({"data": regioes}), 200
+
+    except Exception:
+        return jsonify({
+            "error": "Não foi possível carregar as regiões de entrega."
+        }), 500
+
+    finally:
+        if cursor:
+            cursor.close()
+        if conexao:
+            conexao.close()
+
+
+@admin_bp.post("/regioes-entrega")
+@exigir_login_admin
+def cadastrar_regiao_entrega_admin():
+    dados = request.get_json(silent=True)
+    regiao, erro = validar_dados_regiao(dados)
+
+    if erro:
+        return jsonify({"error": erro}), 400
+
+    conexao = None
+    cursor = None
+
+    try:
+        conexao = get_connection()
+        cursor = conexao.cursor(dictionary=True)
+
+        cursor.execute("""
+            SELECT id
+            FROM regioes_entrega
+            WHERE bairro = %s AND cidade = %s
+            LIMIT 1
+        """, (regiao["bairro"], regiao["cidade"]))
+
+        if cursor.fetchone():
+            return jsonify({
+                "error": "Esse bairro já está cadastrado nessa cidade."
+            }), 409
+
+        cursor.execute("""
+            INSERT INTO regioes_entrega (
+                bairro,
+                cidade,
+                taxa,
+                prazo_estimado_min,
+                ativo
+            )
+            VALUES (%s, %s, %s, %s, %s)
+        """, (
+            regiao["bairro"],
+            regiao["cidade"],
+            str(regiao["taxa"]),
+            regiao["prazo_estimado_min"],
+            int(regiao["ativo"]),
+        ))
+
+        conexao.commit()
+
+        return jsonify({
+            "message": "Região de entrega cadastrada com sucesso.",
+            "id": cursor.lastrowid,
+        }), 201
+
+    except Exception:
+        if conexao:
+            conexao.rollback()
+
+        return jsonify({
+            "error": "Não foi possível cadastrar a região de entrega."
+        }), 500
+
+    finally:
+        if cursor:
+            cursor.close()
+        if conexao:
+            conexao.close()
+
+
+@admin_bp.patch("/regioes-entrega/<int:regiao_id>")
+@exigir_login_admin
+def editar_regiao_entrega_admin(regiao_id):
+    dados = request.get_json(silent=True)
+    regiao, erro = validar_dados_regiao(dados)
+
+    if erro:
+        return jsonify({"error": erro}), 400
+
+    conexao = None
+    cursor = None
+
+    try:
+        conexao = get_connection()
+        cursor = conexao.cursor(dictionary=True)
+
+        cursor.execute("""
+            SELECT id
+            FROM regioes_entrega
+            WHERE id = %s
+        """, (regiao_id,))
+
+        if not cursor.fetchone():
+            return jsonify({
+                "error": "Região de entrega não encontrada."
+            }), 404
+
+        cursor.execute("""
+            SELECT id
+            FROM regioes_entrega
+            WHERE bairro = %s
+              AND cidade = %s
+              AND id <> %s
+            LIMIT 1
+        """, (
+            regiao["bairro"],
+            regiao["cidade"],
+            regiao_id,
+        ))
+
+        if cursor.fetchone():
+            return jsonify({
+                "error": "Esse bairro já está cadastrado nessa cidade."
+            }), 409
+
+        cursor.execute("""
+            UPDATE regioes_entrega
+            SET
+                bairro = %s,
+                cidade = %s,
+                taxa = %s,
+                prazo_estimado_min = %s,
+                ativo = %s
+            WHERE id = %s
+        """, (
+            regiao["bairro"],
+            regiao["cidade"],
+            str(regiao["taxa"]),
+            regiao["prazo_estimado_min"],
+            int(regiao["ativo"]),
+            regiao_id,
+        ))
+
+        conexao.commit()
+
+        return jsonify({
+            "message": "Região de entrega atualizada com sucesso."
+        }), 200
+
+    except Exception:
+        if conexao:
+            conexao.rollback()
+
+        return jsonify({
+            "error": "Não foi possível atualizar a região de entrega."
+        }), 500
+
+    finally:
+        if cursor:
+            cursor.close()
+        if conexao:
+            conexao.close()
+
+
+@admin_bp.patch("/regioes-entrega/<int:regiao_id>/ativo")
+@exigir_login_admin
+def alterar_ativo_regiao_entrega_admin(regiao_id):
+    dados = request.get_json(silent=True) or {}
+    ativo = dados.get("ativo")
+
+    if not isinstance(ativo, bool):
+        return jsonify({
+            "error": "Informe ativo como verdadeiro ou falso."
+        }), 400
+
+    conexao = None
+    cursor = None
+
+    try:
+        conexao = get_connection()
+        cursor = conexao.cursor()
+
+        cursor.execute("""
+            UPDATE regioes_entrega
+            SET ativo = %s
+            WHERE id = %s
+        """, (int(ativo), regiao_id))
+
+        if cursor.rowcount == 0:
+            cursor.execute("""
+                SELECT id
+                FROM regioes_entrega
+                WHERE id = %s
+            """, (regiao_id,))
+
+            if not cursor.fetchone():
+                return jsonify({
+                    "error": "Região de entrega não encontrada."
+                }), 404
+
+        conexao.commit()
+
+        return jsonify({
+            "message": (
+                "Região ativada com sucesso."
+                if ativo
+                else "Região desativada com sucesso."
+            )
+        }), 200
+
+    except Exception:
+        if conexao:
+            conexao.rollback()
+
+        return jsonify({
+            "error": "Não foi possível alterar o status da região."
+        }), 500
+
+    finally:
+        if cursor:
+            cursor.close()
+        if conexao:
+            conexao.close()
+
+# ==========================================
 # CONFIGURAÇÕES DA LOJA
 # ==========================================
 

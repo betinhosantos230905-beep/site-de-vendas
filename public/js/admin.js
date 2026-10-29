@@ -36,6 +36,7 @@ let categorias = [];
 let cupons = [];
 let pagamentosFaturamento = [];
 let clientes = [];
+let regioesEntrega = [];
  
 function dinheiro(valor) {
     return Number(valor || 0).toLocaleString("pt-BR", {
@@ -1896,6 +1897,7 @@ function renderizarClientes() {
  
 async function carregarConfiguracoes() {
     carregarFuncionamento();
+    carregarRegioesEntrega();
  
     const campo = $("#taxa-entrega");
     const mensagem = $("#mensagem-taxa-entrega");
@@ -1957,6 +1959,290 @@ $("#form-taxa-entrega")?.addEventListener("submit", async (evento) => {
         botao.disabled = false;
     }
 });
+
+
+/* =========================
+   REGIÕES DE ENTREGA
+========================= */
+
+async function carregarRegioesEntrega() {
+    const lista = $("#lista-regioes-entrega");
+    const mensagem = $("#mensagem-regiao-entrega");
+
+    if (!lista) return;
+
+    lista.replaceChildren();
+
+    const linha = elemento("tr");
+    const celula = elemento("td", "", "Carregando regiões...");
+    celula.colSpan = 5;
+    linha.append(celula);
+    lista.append(linha);
+
+    try {
+        const dados = await requisicao("/regioes-entrega");
+
+        regioesEntrega = Array.isArray(dados)
+            ? dados
+            : (dados.data || dados.regioes || []);
+
+        renderizarRegioesEntrega();
+
+        if (mensagem) {
+            mensagem.textContent = "";
+            mensagem.classList.remove("erro");
+        }
+    } catch (erro) {
+        lista.replaceChildren();
+
+        const linhaErro = elemento("tr");
+        const celulaErro = elemento("td", "", erro.message);
+        celulaErro.colSpan = 5;
+        linhaErro.append(celulaErro);
+        lista.append(linhaErro);
+
+        if (mensagem) {
+            mensagem.textContent =
+                "Não foi possível carregar as regiões: " + erro.message;
+            mensagem.classList.add("erro");
+        }
+    }
+}
+
+function renderizarRegioesEntrega() {
+    const lista = $("#lista-regioes-entrega");
+    if (!lista) return;
+
+    lista.replaceChildren();
+
+    if (!regioesEntrega.length) {
+        const linha = elemento("tr");
+        const celula = elemento(
+            "td",
+            "",
+            "Nenhuma região de entrega cadastrada."
+        );
+
+        celula.colSpan = 5;
+        linha.append(celula);
+        lista.append(linha);
+        return;
+    }
+
+    for (const regiao of regioesEntrega) {
+        const linha = elemento("tr");
+
+        const ativa =
+            regiao.ativo === true ||
+            regiao.ativo === 1 ||
+            regiao.ativo === "1";
+
+        linha.append(
+            elemento("td", "", regiao.cidade || "—"),
+            elemento("td", "", regiao.bairro || "—"),
+            elemento("td", "", dinheiro(regiao.taxa)),
+            elemento(
+                "td",
+                "",
+                regiao.prazo_estimado_min
+                    ? `${regiao.prazo_estimado_min} min`
+                    : "Não definido"
+            ),
+            elemento("td", "", ativa ? "Ativa" : "Inativa")
+        );
+
+        const acoes = elemento("td");
+
+        const botaoEditar = elemento(
+            "button",
+            "btn btn-light",
+            "Editar"
+        );
+        botaoEditar.type = "button";
+        botaoEditar.addEventListener("click", () => {
+            editarRegiaoEntrega(regiao);
+        });
+
+        const botaoStatus = elemento(
+            "button",
+            "btn btn-light",
+            ativa ? "Desativar" : "Ativar"
+        );
+        botaoStatus.type = "button";
+        botaoStatus.addEventListener("click", () => {
+            alterarStatusRegiaoEntrega(regiao, ativa);
+        });
+
+        acoes.append(botaoEditar, botaoStatus);
+        linha.append(acoes);
+        lista.append(linha);
+    }
+}
+
+function editarRegiaoEntrega(regiao) {
+    const formulario = $("#form-regiao-entrega");
+    if (!formulario) return;
+
+    $("#regiao-entrega-id").value = regiao.id;
+    $("#regiao-cidade").value = regiao.cidade || "";
+    $("#regiao-bairro").value = regiao.bairro || "";
+    $("#regiao-taxa").value = regiao.taxa ?? 0;
+    $("#regiao-prazo").value = regiao.prazo_estimado_min ?? "";
+    $("#regiao-ativo").checked =
+        regiao.ativo === true ||
+        regiao.ativo === 1 ||
+        regiao.ativo === "1";
+
+    const botao = $("#btn-salvar-regiao");
+    if (botao) botao.textContent = "Salvar alterações";
+
+    formulario.scrollIntoView({
+        behavior: "smooth",
+        block: "start"
+    });
+
+    $("#regiao-cidade").focus();
+}
+
+function limparFormularioRegiaoEntrega() {
+    const formulario = $("#form-regiao-entrega");
+    if (formulario) formulario.reset();
+
+    const id = $("#regiao-entrega-id");
+    if (id) id.value = "";
+
+    const ativo = $("#regiao-ativo");
+    if (ativo) ativo.checked = true;
+
+    const botao = $("#btn-salvar-regiao");
+    if (botao) botao.textContent = "Cadastrar região";
+
+    const mensagem = $("#mensagem-regiao-entrega");
+    if (mensagem) {
+        mensagem.textContent = "";
+        mensagem.classList.remove("erro");
+    }
+}
+
+$("#form-regiao-entrega")?.addEventListener("submit", async (evento) => {
+    evento.preventDefault();
+
+    const id = $("#regiao-entrega-id").value.trim();
+    const cidade = $("#regiao-cidade").value.trim();
+    const bairro = $("#regiao-bairro").value.trim();
+    const taxaTexto = $("#regiao-taxa").value.trim();
+    const prazoTexto = $("#regiao-prazo").value.trim();
+    const mensagem = $("#mensagem-regiao-entrega");
+    const botao = $("#btn-salvar-regiao");
+
+    const taxa = Number(taxaTexto);
+    const prazo = prazoTexto === "" ? null : Number(prazoTexto);
+
+    if (!cidade || !bairro) {
+        mensagem.textContent = "Informe a cidade e o bairro.";
+        mensagem.classList.add("erro");
+        return;
+    }
+
+    if (
+        taxaTexto === "" ||
+        !Number.isFinite(taxa) ||
+        taxa < 0 ||
+        taxa > 99999999.99
+    ) {
+        mensagem.textContent = "Informe uma taxa de entrega válida.";
+        mensagem.classList.add("erro");
+        return;
+    }
+
+    if (
+        prazo !== null &&
+        (!Number.isInteger(prazo) || prazo < 1 || prazo > 65535)
+    ) {
+        mensagem.textContent =
+            "O prazo deve ser um número inteiro de minutos maior que zero.";
+        mensagem.classList.add("erro");
+        return;
+    }
+
+    const dados = {
+        cidade,
+        bairro,
+        taxa,
+        prazo_estimado_min: prazo,
+        ativo: $("#regiao-ativo").checked
+    };
+
+    botao.disabled = true;
+    mensagem.classList.remove("erro");
+    mensagem.textContent = "Salvando região...";
+
+    try {
+        await requisicao(
+            id ? `/regioes-entrega/${id}` : "/regioes-entrega",
+            {
+                method: id ? "PATCH" : "POST",
+                body: JSON.stringify(dados)
+            }
+        );
+
+        mensagem.textContent = id
+            ? "Região atualizada com sucesso."
+            : "Região cadastrada com sucesso.";
+
+        limparFormularioRegiaoEntrega();
+        await carregarRegioesEntrega();
+    } catch (erro) {
+        mensagem.textContent = erro.message;
+        mensagem.classList.add("erro");
+    } finally {
+        botao.disabled = false;
+    }
+});
+
+$("#btn-cancelar-regiao")?.addEventListener(
+    "click",
+    limparFormularioRegiaoEntrega
+);
+
+$("#btn-atualizar-regioes")?.addEventListener(
+    "click",
+    carregarRegioesEntrega
+);
+
+async function alterarStatusRegiaoEntrega(regiao, ativa) {
+    const acao = ativa ? "desativar" : "ativar";
+
+    if (
+        !confirm(
+            `Deseja ${acao} a entrega para ${regiao.bairro}, ${regiao.cidade}?`
+        )
+    ) {
+        return;
+    }
+
+    const mensagem = $("#mensagem-regiao-entrega");
+
+    try {
+        await requisicao(`/regioes-entrega/${regiao.id}/ativo`, {
+            method: "PATCH",
+            body: JSON.stringify({ ativo: !ativa })
+        });
+
+        if (mensagem) {
+            mensagem.textContent = `Região ${ativa ? "desativada" : "ativada"} com sucesso.`;
+            mensagem.classList.remove("erro");
+        }
+
+        await carregarRegioesEntrega();
+    } catch (erro) {
+        if (mensagem) {
+            mensagem.textContent = erro.message;
+            mensagem.classList.add("erro");
+        }
+    }
+}
+
  
 /* =========================
    FUNCIONAMENTO DA LOJA
