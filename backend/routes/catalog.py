@@ -1,4 +1,4 @@
-
+﻿
 from flask import Blueprint, jsonify, request
 
 from backend.services import catalog_service as service
@@ -104,6 +104,7 @@ def get_public_settings():
 # TESTE DIRETO NO MYSQL
 # ==========================================
 
+
 @catalog_bp.get("/coupons")
 def get_coupons():
     conexao = None
@@ -113,40 +114,76 @@ def get_coupons():
         conexao = get_connection()
         cursor = conexao.cursor(dictionary=True)
 
-        # Confere o banco utilizado pela conexão.
-        cursor.execute("SELECT DATABASE() AS banco_atual")
-        banco = cursor.fetchone()
+        # Desativa cupons vencidos ou que atingiram o limite de usos.
+        cursor.execute("""
+            UPDATE cupons AS c
+            SET ativo = 0
+            WHERE c.ativo = 1
+              AND (
+                  (
+                      c.fim_em IS NOT NULL
+                      AND (
+                          (
+                              TIME(c.fim_em) = '00:00:00'
+                              AND DATE(c.fim_em) < CURDATE()
+                          )
+                          OR (
+                              TIME(c.fim_em) <> '00:00:00'
+                              AND c.fim_em < NOW()
+                          )
+                      )
+                  )
+                  OR (
+                      c.limite_total IS NOT NULL
+                      AND (
+                          SELECT COUNT(*)
+                          FROM cupom_usos AS u
+                          WHERE u.cupom_id = c.id
+                      ) >= c.limite_total
+                  )
+              )
+        """)
 
-        print(
-            "BANCO USADO PELA API DE CUPONS:",
-            banco,
-            flush=True
-        )
+        conexao.commit()
 
-        # Busca os cupons ativos.
+        # Busca somente cupons disponíveis para os clientes.
         cursor.execute("""
             SELECT
-                id,
-                codigo,
-                tipo,
-                valor,
-                pedido_minimo,
-                inicio_em,
-                fim_em,
-                limite_total,
-                ativo
-            FROM cupons
-            WHERE ativo = 1
-            ORDER BY id DESC
+                c.id,
+                c.codigo,
+                c.tipo,
+                c.valor,
+                c.pedido_minimo,
+                c.inicio_em,
+                c.fim_em,
+                c.limite_total,
+                c.ativo
+            FROM cupons AS c
+            WHERE c.ativo = 1
+              AND (
+                  c.inicio_em IS NULL
+                  OR c.inicio_em <= NOW()
+              )
+              AND (
+                  c.fim_em IS NULL
+                  OR c.fim_em >= NOW()
+                  OR (
+                      TIME(c.fim_em) = '00:00:00'
+                      AND DATE(c.fim_em) = CURDATE()
+                  )
+              )
+              AND (
+                  c.limite_total IS NULL
+                  OR (
+                      SELECT COUNT(*)
+                      FROM cupom_usos AS u
+                      WHERE u.cupom_id = c.id
+                  ) < c.limite_total
+              )
+            ORDER BY c.id DESC
         """)
 
         registros = cursor.fetchall()
-
-        print(
-            "TESTE DIRETO DOS CUPONS:",
-            registros,
-            flush=True
-        )
 
         cupons = []
 
@@ -187,17 +224,14 @@ def get_coupons():
                 "discount_value": valor
             })
 
-        print(
-            "TOTAL DE CUPONS ENVIADOS:",
-            len(cupons),
-            flush=True
-        )
-
         return jsonify({
             "cupons": cupons
         }), 200
 
     except Exception as erro:
+        if conexao is not None:
+            conexao.rollback()
+
         print(
             "ERRO NA API DE CUPONS:",
             repr(erro),
