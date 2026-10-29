@@ -1326,6 +1326,7 @@ function abrirCheckout() {
         limparCupom();
         state.couponPhone = "";
 
+       
         dlg.replaceChildren(
           h("div", { class: "sheet-head" },
             h("h3", {}, "Pedido recebido!"),
@@ -1342,10 +1343,19 @@ function abrirCheckout() {
             h("p", {}, "Seu pedido foi registrado com sucesso."),
             h("p", {}, `Número do pedido: ${pedido.numero}`),
             h("p", {}, `Total: ${brl(pedido.total)}`),
-            h("p", {}, "Guarde o número para consultar seu pedido.")
+            h("p", {}, "Acompanhe o andamento do seu pedido pelo número e telefone informados no checkout.")
           ),
 
           h("div", { class: "sheet-foot" },
+            h("button", {
+              class: "btn",
+              type: "button",
+              onclick: () => {
+                dlg.close();
+                abrirAcompanhamentoPedido(pedido.numero, telefoneCliente);
+              },
+            }, "Acompanhar meu pedido"),
+
             h("button", {
               class: "btn",
               type: "button",
@@ -1353,6 +1363,7 @@ function abrirCheckout() {
             }, "Voltar ao cardápio")
           )
         );
+
 
         toast("Pedido registrado com sucesso!");
       } catch (erro) {
@@ -1455,6 +1466,194 @@ function abrirCheckout() {
   }
 
   if (!dlg.open) dlg.showModal();
+}
+
+/* ---------- Acompanhamento de pedidos ---------- */
+
+function abrirAcompanhamentoPedido(numeroInicial = "", telefoneInicial = "") {
+  const anterior = $("order-track-dialog");
+
+  if (anterior) anterior.remove();
+
+  const dlg = h("dialog", {
+    id: "order-track-dialog",
+    class: "sheet",
+    "aria-labelledby": "order-track-title",
+  });
+
+  const numero = h("input", {
+    id: "track-order-number",
+    name: "numero",
+    type: "text",
+    required: true,
+    maxlength: "80",
+    autocomplete: "off",
+    placeholder: "Número do pedido",
+    value: numeroInicial,
+  });
+
+  const telefone = h("input", {
+    id: "track-order-phone",
+    name: "telefone",
+    type: "tel",
+    required: true,
+    maxlength: "25",
+    autocomplete: "tel",
+    placeholder: "DDD + telefone usado no pedido",
+    value: telefoneInicial || state.couponPhone,
+  });
+
+  const mensagem = h("p", {
+    class: "hint",
+    role: "status",
+    "aria-live": "polite",
+  });
+
+  const resultado = h("div", {
+    class: "order-track-result",
+  });
+
+  const consultar = h("button", {
+    class: "btn",
+    type: "submit",
+  }, "Consultar pedido");
+
+  const formulario = h("form", {
+    class: "sheet-body",
+
+    onsubmit: async evento => {
+      evento.preventDefault();
+
+      const numeroPedido = numero.value.trim();
+      const telefoneCliente = telefone.value.trim();
+
+      if (!numeroPedido || !telefoneCliente) {
+        mensagem.textContent = "Informe o número do pedido e o telefone.";
+        return;
+      }
+
+      consultar.disabled = true;
+      consultar.textContent = "Consultando...";
+      mensagem.textContent = "";
+      resultado.replaceChildren();
+
+      try {
+        const resposta = await SaltyAPI.trackOrder(
+          numeroPedido,
+          telefoneCliente
+        );
+
+        const pedido = resposta?.pedido || resposta?.data || resposta;
+
+        if (!pedido || !pedido.status) {
+          throw new Error("Não foi possível localizar o pedido.");
+        }
+
+        const statusLabels = {
+          recebido: "Pedido recebido",
+          confirmado: "Pedido confirmado",
+          em_preparo: "Em preparo",
+          pronto_retirada: "Pronto para retirada",
+          saiu_entrega: "Saiu para entrega",
+          entregue: "Pedido entregue",
+          cancelado: "Pedido cancelado",
+        };
+
+        const historico = Array.isArray(pedido.historico)
+          ? pedido.historico
+          : Array.isArray(pedido.historico_status)
+            ? pedido.historico_status
+            : [];
+
+        resultado.replaceChildren(
+          h("h4", {}, `Pedido ${pedido.numero || numeroPedido}`),
+
+          h("p", {},
+            `Status: ${statusLabels[pedido.status] || pedido.status}`
+          ),
+
+          pedido.modalidade
+            ? h("p", {},
+                `Modalidade: ${
+                  pedido.modalidade === "retirada"
+                    ? "Retirada no local"
+                    : "Entrega"
+                }`
+              )
+            : null,
+
+          pedido.status === "cancelado" && pedido.motivo_cancelamento
+            ? h("p", {},
+                `Motivo do cancelamento: ${pedido.motivo_cancelamento}`
+              )
+            : null,
+
+          h("h4", {}, "Histórico do pedido"),
+
+          historico.length
+            ? h("ul", {},
+                historico.map(item =>
+                  h("li", {},
+                    statusLabels[item.status] || item.status || "Atualização",
+                    item.criado_em || item.data
+                      ? ` — ${item.criado_em || item.data}`
+                      : ""
+                  )
+                )
+              )
+            : h("p", {},
+                "Ainda não há atualizações no histórico."
+              )
+        );
+
+        mensagem.textContent = "Consulta realizada com sucesso.";
+      } catch (erro) {
+        mensagem.textContent =
+          erro.message || "Não foi possível consultar o pedido.";
+      } finally {
+        consultar.disabled = false;
+        consultar.textContent = "Consultar pedido";
+      }
+    },
+  },
+    h("label", {
+      class: "lbl",
+      for: "track-order-number",
+    }, "Número do pedido", numero),
+
+    h("label", {
+      class: "lbl",
+      for: "track-order-phone",
+    }, "Telefone usado no pedido", telefone),
+
+    mensagem,
+    consultar,
+    resultado
+  );
+
+  dlg.append(
+    h("div", { class: "sheet-head" },
+      h("h3", { id: "order-track-title" }, "Acompanhar pedido"),
+
+      h("button", {
+        class: "close",
+        type: "button",
+        "aria-label": "Fechar acompanhamento",
+        onclick: () => dlg.close(),
+      }, "×")
+    ),
+
+    formulario
+  );
+
+  dlg.addEventListener("click", evento => {
+    if (evento.target === dlg) dlg.close();
+  });
+
+  dlg.addEventListener("close", () => dlg.remove(), { once: true });
+
+  document.body.append(dlg);
+  dlg.showModal();
 }
 
 /* ---------- Indicador do carrinho ---------- */
