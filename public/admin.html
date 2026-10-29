@@ -194,8 +194,33 @@
                     >
                     <p class="mensagem">O preço promocional deve ser menor que o preço normal.</p>
 
-                    <label for="produto-imagem">URL da imagem</label>
-                    <input id="produto-imagem" type="url" maxlength="255">
+
+<label for="produto-imagem">URL da imagem</label>
+<input
+    id="produto-imagem"
+    type="url"
+    maxlength="255"
+    placeholder="Cole uma URL ou envie uma imagem"
+>
+
+<label for="produto-imagem-arquivo">Enviar imagem do dispositivo</label>
+<input
+    id="produto-imagem-arquivo"
+    type="file"
+    accept="image/jpeg,image/png,image/webp,image/avif"
+>
+
+<p class="mensagem">Formatos aceitos: JPG, PNG, WEBP e AVIF. Tamanho máximo: 5 MB.</p>
+
+<div id="produto-imagem-status" class="mensagem" role="status" aria-live="polite"></div>
+
+<img
+    id="produto-imagem-preview"
+    alt="Prévia da imagem do produto"
+    hidden
+    style="max-width: 220px; max-height: 180px; object-fit: contain; margin-top: 10px;"
+>
+
 
                     <label for="produto-preparo">Tempo de preparo (minutos)</label>
                     <input id="produto-preparo" type="number" min="0" max="65535">

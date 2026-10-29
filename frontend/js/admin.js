@@ -37,6 +37,7 @@ let cupons = [];
 let pagamentosFaturamento = [];
 let clientes = [];
 let regioesEntrega = [];
+let uploadImagemEmAndamento = false;
  
 function dinheiro(valor) {
     return Number(valor || 0).toLocaleString("pt-BR", {
@@ -1098,6 +1099,166 @@ function renderizarProdutos() {
     }
 }
  
+function definirStatusUploadImagem(texto, erro = false) {
+    const status = $("#produto-imagem-status");
+
+    if (!status) return;
+
+    status.textContent = texto;
+    status.dataset.tipo = erro ? "erro" : "sucesso";
+}
+
+function atualizarPreviewImagem(url) {
+    const preview = $("#produto-imagem-preview");
+
+    if (!preview) return;
+
+    const valor = (url || "").trim();
+
+    if (!valor) {
+        preview.removeAttribute("src");
+        preview.hidden = true;
+        return;
+    }
+
+    try {
+        const endereco = new URL(valor);
+
+        if (!["http:", "https:"].includes(endereco.protocol)) {
+            throw new Error("URL inválida.");
+        }
+
+        preview.src = endereco.href;
+        preview.hidden = false;
+    } catch {
+        preview.removeAttribute("src");
+        preview.hidden = true;
+    }
+}
+
+async function enviarImagemProduto(arquivo) {
+    definirStatusUploadImagem("Preparando o envio da imagem...");
+
+    const assinatura = await requisicao(
+        "/produtos/upload-assinatura",
+        { method: "GET" }
+    );
+
+    const dados = new FormData();
+
+    dados.append("file", arquivo);
+    dados.append("api_key", assinatura.api_key);
+    dados.append("timestamp", String(assinatura.timestamp));
+    dados.append("folder", assinatura.folder);
+    dados.append("signature", assinatura.signature);
+
+    const resposta = await fetch(
+        `https://api.cloudinary.com/v1_1/${encodeURIComponent(assinatura.cloud_name)}/image/upload`,
+        {
+            method: "POST",
+            body: dados
+        }
+    );
+
+    let resultado;
+
+    try {
+        resultado = await resposta.json();
+    } catch {
+        throw new Error("Resposta inválida do serviço de imagens.");
+    }
+
+    if (!resposta.ok) {
+        throw new Error(
+            resultado?.error?.message ||
+            "Falha no envio da imagem."
+        );
+    }
+
+    if (!resultado.secure_url) {
+        throw new Error("O serviço não retornou uma URL segura.");
+    }
+
+    const campoUrl = $("#produto-imagem");
+
+    if (!campoUrl) {
+        throw new Error("Campo da URL da imagem não encontrado.");
+    }
+
+    campoUrl.value = resultado.secure_url;
+
+    atualizarPreviewImagem(resultado.secure_url);
+
+    definirStatusUploadImagem("Imagem enviada com sucesso.");
+}
+
+$("#produto-imagem-arquivo")?.addEventListener(
+    "change",
+    async (evento) => {
+        const campoArquivo = evento.currentTarget;
+        const arquivo = campoArquivo.files?.[0];
+
+        if (!arquivo) return;
+
+        const tiposPermitidos = [
+            "image/jpeg",
+            "image/png",
+            "image/webp",
+            "image/avif"
+        ];
+
+        if (!tiposPermitidos.includes(arquivo.type)) {
+            definirStatusUploadImagem(
+                "Use uma imagem JPG, PNG, WEBP ou AVIF.",
+                true
+            );
+
+            campoArquivo.value = "";
+            return;
+        }
+
+        if (arquivo.size > 5 * 1024 * 1024) {
+            definirStatusUploadImagem(
+                "A imagem deve ter no máximo 5 MB.",
+                true
+            );
+
+            campoArquivo.value = "";
+            return;
+        }
+
+        if (uploadImagemEmAndamento) {
+            definirStatusUploadImagem(
+                "Já existe um envio em andamento.",
+                true
+            );
+
+            campoArquivo.value = "";
+            return;
+        }
+
+        uploadImagemEmAndamento = true;
+
+        try {
+            await enviarImagemProduto(arquivo);
+        } catch (erro) {
+            definirStatusUploadImagem(
+                erro.message || "Falha no envio da imagem.",
+                true
+            );
+
+            campoArquivo.value = "";
+        } finally {
+            uploadImagemEmAndamento = false;
+        }
+    }
+);
+
+$("#produto-imagem")?.addEventListener("input", (evento) => {
+    atualizarPreviewImagem(evento.currentTarget.value);
+});
+
+
 function abrirFormularioProduto(produto = null) {
     $("#formulario-produto-card").hidden = false;
     $("#form-produto").reset();
@@ -1118,6 +1279,7 @@ function abrirFormularioProduto(produto = null) {
     }
  
     $("#produto-imagem").value = produto?.image_url || "";
+    atualizarPreviewImagem($("#produto-imagem").value);
     $("#produto-preparo").value = produto?.prep_minutes ?? "";
  
     $("#produto-disponivel").checked = produto
