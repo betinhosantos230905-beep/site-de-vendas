@@ -1352,7 +1352,7 @@ function abrirCheckout() {
               type: "button",
               onclick: () => {
                 dlg.close();
-                abrirAcompanhamentoPedido(pedido. numero, telefoneCliente);
+                abrirAcompanhamentoPedido(pedido.numero, telefoneCliente);
               },
             }, "Acompanhar meu pedido"),
 
