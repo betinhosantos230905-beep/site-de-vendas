@@ -1574,7 +1574,7 @@ function abrirAcompanhamentoPedido(numeroInicial = "", telefoneInicial = "") {
             ? h("p", {},
                 `Motivo do cancelamento: ${pedido.motivo_cancelamento}`
               )
-            : null,
+            : "",
 
           h("h4", {}, "Histórico do pedido"),
 
